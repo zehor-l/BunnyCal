@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐰 BunnyCal ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Twemoji: consistent emoji rendering across ALL devices -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+<style>
+/* Make Twemoji images match surrounding text size exactly */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 .05em 0 .1em;
+  vertical-align: -0.1em;
+  display: inline-block;
+}
+</style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey:"AIzaSyCAwkT617nXLeQuDdSV8XLaQC4EEsg-g8w",
+    authDomain:"bunnycalendar-d7604.firebaseapp.com",
+    projectId:"bunnycalendar-d7604",
+    storageBucket:"bunnycalendar-d7604.firebasestorage.app",
+    messagingSenderId:"600419694120",
+    appId:"1:600419694120:web:fbee0c84dd5187d142e71d",
+    measurementId:"G-W72SG98EWL"
+  };
+  const app=initializeApp(firebaseConfig);
+  const auth=getAuth(app); const db=getFirestore(app);
+  const provider=new GoogleAuthProvider();
+  window._fb={auth,db,provider,signInWithPopup,signOut,onAuthStateChanged,doc,setDoc,getDoc,collection,getDocs,deleteDoc};
+</script>
+<style>
+:root{
+  --pink:#ffb7c5;--pink-deep:#e88fa0;--lavender:#c9b8e8;--mint:#a8dcc5;
+  --yellow:#ffe49a;--brown:#8b5e52;--text:#5a3e35;--white:#fffcf7;
+  --shadow:rgba(139,94,82,.15);--radius:20px;
+  --health:#ff9a9e;--soul:#c9b8e8;--brain:#a8dcc5;--custom:#ffe49a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;color:var(--text);min-height:100vh;overflow-x:hidden;position:relative;}
+
+.bg-layer{position:fixed;inset:0;z-index:0;transition:background 1.2s ease;}
+.bg-spring{background:linear-gradient(160deg,#fde8f0 0%,#fef3e2 40%,#fad0c4 100%);}
+.bg-forest{background:linear-gradient(160deg,#2d5a27 0%,#4a7c3f 30%,#6ba368 60%,#a8d5a2 100%);}
+.bg-ocean{background:linear-gradient(160deg,#0a3d62 0%,#1a6fa8 40%,#38afc2 70%,#a8dde8 100%);}
+.bg-sunset{background:linear-gradient(160deg,#c0392b 0%,#e67e22 40%,#f39c12 70%,#ffeaa7 100%);}
+.bg-night{background:linear-gradient(160deg,#0d0d2b 0%,#1a1a4e 40%,#2d2d7f 70%,#6c5ce7 100%);}
+
+.particle{position:fixed;pointer-events:none;z-index:1;font-size:1.4rem;opacity:.5;animation:floatUp linear infinite;}
+@keyframes floatUp{0%{transform:translateY(110vh) rotate(0deg);opacity:.5;}100%{transform:translateY(-10vh) rotate(360deg);opacity:0;}}
+
+#app{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:14px;}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-radius:22px;
+  padding:11px 18px;margin-bottom:11px;box-shadow:0 4px 24px var(--shadow);border:2px solid rgba(255,183,197,.4);}
+.logo{font-size:1.65rem;font-weight:900;letter-spacing:-1px;}
+.logo .b{color:#e88fa0;}.logo .c{color:#7c5cbf;}
+.header-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.hbtn{background:rgba(255,183,197,.3);border:2px solid rgba(255,183,197,.5);border-radius:50px;
+  padding:5px 12px;font-family:inherit;font-size:.8rem;font-weight:700;color:var(--text);cursor:pointer;transition:.2s;white-space:nowrap;}
+.hbtn:hover{background:var(--pink);transform:translateY(-2px);}
+.hbtn.active{background:var(--pink);border-color:var(--pink-deep);}
+
+/* USER */
+.user-chip{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;
+  background:rgba(201,184,232,.25);border:2px solid rgba(201,184,232,.4);border-radius:50px;}
+.user-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid var(--lavender);}
+.user-name{font-size:.76rem;font-weight:700;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sign-in-btn{background:var(--lavender);border:none;border-radius:50px;padding:6px 13px;
+  font-family:inherit;font-size:.78rem;font-weight:800;color:#fff;cursor:pointer;transition:.2s;}
+.sign-in-btn:hover{background:#b0a0d8;}
+
+/* ── MUSIC BAR ── */
+#music-bar{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);border-radius:16px;
+  padding:8px 15px;margin-bottom:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  box-shadow:0 3px 16px var(--shadow);border:2px solid rgba(168,220,197,.4);}
+.music-label{font-weight:800;font-size:.78rem;color:#3a9a72;}
+.music-track{background:rgba(168,220,197,.25);border:2px solid transparent;border-radius:50px;
+  padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.76rem;font-weight:700;color:var(--text);transition:.2s;}
+.music-track:hover{background:var(--mint);}
+.music-track.playing{background:var(--mint);border-color:#5aaf8a;}
+.vol-slider{width:72px;accent-color:var(--mint);cursor:pointer;}
+
+/* ── LAYOUT ── */
+#main-area{display:grid;grid-template-columns:1fr 300px;gap:12px;}
+@media(max-width:780px){#main-area{grid-template-columns:1fr;}}
+.panel{background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-radius:var(--radius);
+  padding:16px;box-shadow:0 6px 32px var(--shadow);border:2px solid rgba(255,183,197,.3);}
+.panel-title{font-family:'Caveat',cursive;font-size:1.35rem;font-weight:700;color:var(--brown);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+
+/* ── VIEW TABS ── */
+.view-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.vtab{padding:5px 15px;border-radius:50px;border:2px solid rgba(255,183,197,.4);
+  background:rgba(255,255,255,.65);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:.2s;color:var(--text);}
+.vtab:hover{background:rgba(255,183,197,.3);}
+.vtab.active{background:var(--pink);border-color:var(--pink-deep);color:white;}
+
+/* ── CALENDAR ── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.cal-nav-btn{background:var(--pink);border:none;border-radius:50%;width:32px;height:32px;
+  font-size:.95rem;cursor:pointer;transition:.2s;color:white;font-weight:900;}
+.cal-nav-btn:hover{background:var(--pink-deep);transform:scale(1.1);}
+.cal-month{font-family:'Caveat',cursive;font-size:1.85rem;font-weight:700;color:var(--brown);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{text-align:center;font-size:.64rem;font-weight:800;color:var(--pink-deep);padding:3px 0;}
+.cal-day{border-radius:9px;display:flex;flex-direction:column;align-items:flex-start;
+  padding:4px 4px 3px;cursor:pointer;transition:.15s;position:relative;
+  background:rgba(253,246,227,.5);border:2px solid transparent;min-height:68px;overflow:hidden;}
+.cal-day:hover{background:rgba(255,183,197,.3);transform:scale(1.02);}
+.cal-day.today{border-color:var(--pink-deep)!important;background:rgba(255,183,197,.2);}
+.cal-day.other-month{opacity:.3;}
+.day-num{font-size:.7rem;font-weight:800;line-height:1;margin-bottom:2px;}
+.cal-ev-pill{font-size:.58rem;font-weight:700;border-radius:4px;padding:1px 4px;margin-top:1px;
+  width:100%;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  cursor:pointer;border:none;font-family:inherit;display:block;}
+.reminder-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#ff6b6b;}
+
+/* ── SIDEBAR ── */
+.sidebar{display:flex;flex-direction:column;gap:10px;}
+.event-list{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
+.event-chip{display:flex;align-items:center;gap:7px;padding:7px 10px;
+  background:rgba(253,246,227,.6);border-radius:10px;font-size:.79rem;
+  border-left:4px solid var(--pink);cursor:pointer;transition:.15s;}
+.event-chip:hover{background:rgba(255,183,197,.3);transform:translateX(3px);}
+.event-chip .stamp{font-size:.95rem;}.event-chip .info{flex:1;}
+.event-chip .edate{font-size:.66rem;color:var(--pink-deep);font-weight:700;}
+.event-chip .etitle{font-weight:700;}
+
+/* ── TODO ── */
+.todo-add{display:flex;gap:6px;margin-bottom:8px;}
+.todo-input{flex:1;padding:7px 11px;border:2px solid rgba(255,183,197,.5);border-radius:50px;
+  background:rgba(253,246,227,.7);font-family:inherit;font-size:.82rem;outline:none;color:var(--text);}
+.todo-input:focus{border-color:var(--pink-deep);}
+.add-btn{background:var(--pink);border:none;border-radius:50%;width:30px;height:30px;
+  font-size:.95rem;cursor:pointer;color:white;font-weight:900;transition:.2s;flex-shrink:0;}
+.add-btn:hover{background:var(--pink-deep);transform:scale(1.1);}
+.todo-list{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;}
+.todo-item{display:flex;align-items:center;gap:7px;padding:5px 9px;
+  background:rgba(253,246,227,.6);border-radius:9px;font-size:.79rem;border:1.5px solid rgba(255,183,197,.3);}
+.todo-item input[type=checkbox]{accent-color:var(--pink-deep);width:13px;height:13px;cursor:pointer;flex-shrink:0;}
+.todo-item.done span{text-decoration:line-through;opacity:.45;}
+.todo-item span{flex:1;word-break:break-word;}
+.del-btn{background:none;border:none;cursor:pointer;font-size:.78rem;opacity:.35;transition:.15s;flex-shrink:0;}
+.del-btn:hover{opacity:1;}
+
+/* ── DAILY ROUTINE ── */
+.routine-date-strip{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.routine-date-label{font-family:'Caveat',cursive;font-size:1.5rem;font-weight:700;color:var(--brown);}
+.routine-date-nav{background:var(--pink);border:none;border-radius:50%;width:28px;height:28px;
+  font-size:.85rem;cursor:pointer;color:white;font-weight:900;transition:.2s;}
+.routine-date-nav:hover{background:var(--pink-deep);}
+
+.routine-sections{display:flex;flex-direction:column;gap:12px;}
+.routine-section{border-radius:15px;padding:12px 14px;border:2px solid transparent;}
+.rs-health{background:rgba(255,154,158,.12);border-color:rgba(255,154,158,.35);}
+.rs-soul  {background:rgba(201,184,232,.12);border-color:rgba(201,184,232,.35);}
+.rs-brain {background:rgba(168,220,197,.12);border-color:rgba(168,220,197,.35);}
+.rs-custom{background:rgba(255,228,154,.12);border-color:rgba(255,228,154,.4);}
+
+.rs-header{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.rs-icon{font-size:1.3rem;}
+.rs-title{font-family:'Caveat',cursive;font-size:1.15rem;font-weight:700;color:var(--brown);flex:1;}
+.rs-del-section{background:none;border:none;cursor:pointer;font-size:.8rem;opacity:.35;transition:.15s;}
+.rs-del-section:hover{opacity:1;}
+.rs-progress{height:5px;border-radius:50px;background:rgba(0,0,0,.07);margin-bottom:9px;overflow:hidden;}
+.rs-progress-bar{height:100%;border-radius:50px;transition:width .4s ease;}
+.rs-health .rs-progress-bar{background:linear-gradient(90deg,#ff9a9e,#ffb7c5);}
+.rs-soul   .rs-progress-bar{background:linear-gradient(90deg,#c9b8e8,#e0d4f7);}
+.rs-brain  .rs-progress-bar{background:linear-gradient(90deg,#a8dcc5,#c4edd9);}
+.rs-custom .rs-progress-bar{background:linear-gradient(90deg,#ffe49a,#fff3c4);}
+
+.rs-tasks{display:flex;flex-direction:column;gap:4px;}
+.rs-task{display:flex;align-items:center;gap:7px;padding:5px 8px;
+  background:rgba(255,255,255,.55);border-radius:8px;font-size:.8rem;}
+.rs-task input[type=checkbox]{flex-shrink:0;width:14px;height:14px;cursor:pointer;}
+.rs-health .rs-task input{accent-color:#e88fa0;}
+.rs-soul   .rs-task input{accent-color:#a08cc8;}
+.rs-brain  .rs-task input{accent-color:#5aaf8a;}
+.rs-custom .rs-task input{accent-color:#c8a800;}
+.rs-task span{flex:1;word-break:break-word;}
+.rs-task.done-task span{text-decoration:line-through;opacity:.45;}
+
+.rs-add{display:flex;gap:5px;margin-top:7px;}
+.rs-add-input{flex:1;padding:5px 10px;border:2px solid rgba(255,183,197,.4);border-radius:50px;
+  background:rgba(255,255,255,.6);font-family:inherit;font-size:.78rem;outline:none;color:var(--text);}
+.rs-add-input:focus{border-color:var(--pink-deep);}
+.rs-add-btn{background:var(--pink);border:none;border-radius:50%;width:26px;height:26px;
+  font-size:.85rem;cursor:pointer;color:white;font-weight:900;flex-shrink:0;transition:.2s;}
+.rs-add-btn:hover{background:var(--pink-deep);}
+
+.add-section-row{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+.add-section-input{flex:1;min-width:120px;padding:7px 12px;border:2px dashed rgba(255,183,197,.5);
+  border-radius:50px;background:rgba(253,246,227,.5);font-family:inherit;font-size:.8rem;outline:none;color:var(--text);}
+.add-section-input:focus{border-color:var(--pink-deep);border-style:solid;}
+.add-section-btn{background:rgba(255,183,197,.3);border:2px solid rgba(255,183,197,.5);border-radius:50px;
+  padding:7px 14px;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:.2s;color:var(--text);}
+.add-section-btn:hover{background:var(--pink);}
+
+/* ── BUCKET LIST ── */
+.bucket-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.btab{padding:5px 14px;border-radius:50px;border:2px solid rgba(255,183,197,.4);
+  background:rgba(255,255,255,.5);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:.2s;color:var(--text);}
+.btab:hover{background:rgba(255,183,197,.3);}
+.btab.active{background:var(--lavender);border-color:#a08cc8;color:white;}
+
+.bucket-list{display:flex;flex-direction:column;gap:7px;max-height:420px;overflow-y:auto;}
+.bucket-item{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;
+  background:rgba(253,246,227,.6);border-radius:12px;border:1.5px solid rgba(255,183,197,.3);transition:.15s;}
+.bucket-item:hover{border-color:rgba(255,183,197,.6);}
+.bucket-item.done-bucket{opacity:.55;}
+.bucket-item input[type=checkbox]{accent-color:var(--pink-deep);width:15px;height:15px;cursor:pointer;flex-shrink:0;margin-top:2px;}
+.bucket-content{flex:1;}
+.bucket-name{font-weight:700;font-size:.84rem;word-break:break-word;}
+.bucket-name.crossed{text-decoration:line-through;opacity:.6;}
+.bucket-meta{font-size:.7rem;color:var(--pink-deep);font-weight:600;margin-top:2px;}
+.bucket-emoji{font-size:1.3rem;flex-shrink:0;}
+.bucket-del{background:none;border:none;cursor:pointer;font-size:.78rem;opacity:.3;transition:.15s;flex-shrink:0;}
+.bucket-del:hover{opacity:1;}
+
+.bucket-add-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.bucket-add-input{flex:1;min-width:140px;padding:7px 12px;border:2px solid rgba(255,183,197,.4);
+  border-radius:50px;background:rgba(253,246,227,.7);font-family:inherit;font-size:.8rem;outline:none;color:var(--text);}
+.bucket-add-input:focus{border-color:var(--pink-deep);}
+.bucket-cat-select{padding:7px 10px;border:2px solid rgba(255,183,197,.4);border-radius:50px;
+  background:rgba(253,246,227,.7);font-family:inherit;font-size:.78rem;outline:none;color:var(--text);}
+
+/* ── SHOPPING LIST ── */
+.shop-cats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.shop-cat-btn{padding:5px 13px;border-radius:50px;border:2px solid rgba(255,183,197,.4);
+  background:rgba(255,255,255,.5);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:.2s;color:var(--text);}
+.shop-cat-btn:hover{background:rgba(255,183,197,.3);}
+.shop-cat-btn.active{background:var(--mint);border-color:#5aaf8a;color:white;}
+.shop-add-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;padding:11px;
+  background:rgba(253,246,227,.5);border-radius:13px;border:2px dashed rgba(168,220,197,.5);}
+.shop-add-row input{flex:1;min-width:130px;padding:7px 12px;border:2px solid rgba(168,220,197,.4);
+  border-radius:50px;background:rgba(255,255,255,.7);font-family:inherit;font-size:.8rem;outline:none;color:var(--text);}
+.shop-add-row input:focus{border-color:var(--mint);}
+.shop-add-row select{padding:7px 10px;border:2px solid rgba(168,220,197,.4);border-radius:50px;
+  background:rgba(255,255,255,.7);font-family:inherit;font-size:.78rem;outline:none;color:var(--text);}
+.shop-add-row input[type=number]{max-width:80px;min-width:60px;}
+.shop-list{display:flex;flex-direction:column;gap:6px;max-height:460px;overflow-y:auto;}
+.shop-group-title{font-family:'Caveat',cursive;font-size:1.05rem;font-weight:700;color:var(--brown);
+  padding:6px 4px 2px;border-bottom:2px dashed rgba(255,183,197,.35);margin-top:6px;}
+.shop-item{display:flex;align-items:center;gap:8px;padding:9px 12px;
+  background:rgba(253,246,227,.65);border-radius:11px;border:1.5px solid rgba(168,220,197,.3);transition:.15s;}
+.shop-item:hover{border-color:rgba(168,220,197,.6);}
+.shop-item.got{opacity:.5;}
+.shop-item input[type=checkbox]{accent-color:#5aaf8a;width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+.shop-item-info{flex:1;}
+.shop-item-name{font-weight:700;font-size:.82rem;}
+.shop-item-name.crossed{text-decoration:line-through;}
+.shop-item-meta{font-size:.68rem;color:#5aaf8a;font-weight:600;}
+.shop-item-qty{font-size:.72rem;background:rgba(168,220,197,.4);border-radius:50px;padding:2px 8px;font-weight:700;white-space:nowrap;}
+.shop-item-del{background:none;border:none;cursor:pointer;font-size:.75rem;opacity:.3;transition:.15s;}
+.shop-item-del:hover{opacity:1;}
+.shop-stats{display:flex;gap:10px;margin-bottom:10px;font-size:.76rem;font-weight:700;flex-wrap:wrap;}
+.shop-stat{background:rgba(168,220,197,.2);border:1.5px solid rgba(168,220,197,.4);border-radius:50px;padding:4px 12px;color:#3a7a5a;}
+.shop-clear-got{background:none;border:2px solid rgba(255,183,197,.4);border-radius:50px;padding:4px 11px;
+  font-family:inherit;font-size:.74rem;font-weight:700;cursor:pointer;color:var(--pink-deep);transition:.2s;margin-left:auto;}
+.shop-clear-got:hover{background:rgba(255,183,197,.3);}
+
+/* ── BG ── */
+.bg-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.bg-choice{padding:5px 10px;border-radius:50px;border:2px solid rgba(255,255,255,.5);
+  font-family:inherit;font-size:.74rem;font-weight:700;cursor:pointer;transition:.2s;}
+.bg-choice:hover{transform:scale(1.06);}
+.bgc-spring{background:linear-gradient(135deg,#ffecd2,#fcb69f);}
+.bgc-forest{background:linear-gradient(135deg,#a8d5a2,#2d5a27);color:white;}
+.bgc-ocean {background:linear-gradient(135deg,#a8dde8,#1a6fa8);color:white;}
+.bgc-sunset{background:linear-gradient(135deg,#ffeaa7,#e67e22);}
+.bgc-night {background:linear-gradient(135deg,#6c5ce7,#0d0d2b);color:white;}
+
+/* ── HOBBY ── */
+.hobby-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+.hobby-card{background:rgba(253,246,227,.7);border-radius:14px;padding:12px 8px;text-align:center;
+  cursor:pointer;transition:.18s;border:2px solid rgba(255,183,197,.3);}
+.hobby-card:hover{transform:translateY(-4px);background:rgba(255,183,197,.3);}
+.hobby-icon{font-size:1.7rem;}.hobby-name{font-size:.74rem;font-weight:700;margin-top:4px;}
+.hobby-count{font-size:.66rem;color:var(--pink-deep);}
+
+/* ── GALLERY ── */
+.gallery{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.gallery-pic{width:62px;height:62px;object-fit:cover;border-radius:10px;cursor:pointer;
+  border:2px solid rgba(255,183,197,.4);transition:.15s;}
+.gallery-pic:hover{transform:scale(1.08);border-color:var(--pink-deep);}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(90,62,53,.38);
+  backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;
+  animation:fadeIn .2s ease;overflow-y:auto;padding:22px 12px 46px;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--white);border-radius:24px;padding:24px;max-width:480px;width:100%;
+  position:relative;box-shadow:0 20px 60px rgba(90,62,53,.25);
+  border:2.5px solid rgba(255,183,197,.5);animation:popIn .25s cubic-bezier(.34,1.56,.64,1);margin:auto;}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-close{position:absolute;top:12px;right:12px;background:rgba(255,183,197,.4);border:none;
+  border-radius:50%;width:29px;height:29px;font-size:.85rem;cursor:pointer;transition:.15s;font-weight:900;}
+.modal-close:hover{background:var(--pink);}
+.modal-title{font-family:'Caveat',cursive;font-size:1.7rem;font-weight:700;color:var(--brown);margin-bottom:13px;}
+.form-row{margin-bottom:9px;}
+.form-row label{display:block;font-size:.76rem;font-weight:700;color:var(--pink-deep);margin-bottom:3px;}
+.form-input,.form-textarea,.form-select{width:100%;padding:8px 12px;border:2px solid rgba(255,183,197,.4);
+  border-radius:12px;background:rgba(253,246,227,.6);font-family:inherit;font-size:.86rem;color:var(--text);outline:none;transition:.2s;}
+.form-input:focus,.form-textarea:focus{border-color:var(--pink-deep);background:var(--white);}
+.form-textarea{resize:vertical;min-height:72px;}
+.form-btn{width:100%;padding:11px;background:var(--pink);border:none;border-radius:50px;
+  font-family:inherit;font-size:.96rem;font-weight:800;color:white;cursor:pointer;transition:.2s;margin-top:7px;}
+.form-btn:hover{background:var(--pink-deep);transform:translateY(-2px);}
+.stamp-btn{font-size:1.3rem;cursor:pointer;border:2px solid transparent;border-radius:8px;
+  padding:3px 5px;transition:.15s;background:transparent;}
+.stamp-btn:hover{background:rgba(255,183,197,.3);transform:scale(1.2);}
+.stamp-btn.selected{border-color:var(--pink-deep);background:rgba(255,183,197,.4);}
+
+/* NOTE CARD */
+.note-card{background:var(--white);border-radius:24px;padding:22px;max-width:480px;width:100%;
+  position:relative;box-shadow:0 20px 60px rgba(90,62,53,.25);border:2.5px solid rgba(255,183,197,.45);
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);margin:auto;}
+.note-header{display:flex;align-items:center;gap:12px;margin-bottom:13px;padding-bottom:12px;border-bottom:2px dashed rgba(255,183,197,.4);}
+.note-stamp-big{font-size:3rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.12));}
+.note-event-name{font-family:'Caveat',cursive;font-size:1.5rem;font-weight:700;color:var(--brown);}
+.note-date{font-size:.74rem;color:var(--pink-deep);font-weight:700;}
+.note-textarea{width:100%;padding:8px 12px;border:2px solid rgba(255,183,197,.4);border-radius:12px;
+  background:rgba(253,246,227,.6);font-family:'Caveat',cursive;font-size:1rem;color:var(--text);
+  outline:none;min-height:90px;resize:vertical;}
+.note-textarea:focus{border-color:var(--pink-deep);}
+.note-img-area{margin-top:8px;}
+.note-img-area img{width:100%;border-radius:12px;margin-top:6px;max-height:150px;object-fit:cover;}
+.note-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.note-btn{flex:1;padding:8px;border:2px solid rgba(255,183,197,.5);border-radius:50px;
+  background:rgba(255,183,197,.2);font-family:inherit;font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;transition:.2s;min-width:65px;}
+.note-btn:hover{background:var(--pink);color:white;}
+.note-btn.danger:hover{background:#e88fa0;color:white;border-color:#e88fa0;}
+
+.reminder-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
+.reminder-item{display:flex;align-items:center;gap:8px;padding:7px 10px;
+  background:rgba(255,228,154,.4);border-radius:10px;border-left:4px solid var(--yellow);font-size:.79rem;}
+.reminder-item .r-del{margin-left:auto;background:none;border:none;cursor:pointer;font-size:.8rem;opacity:.4;}
+.reminder-item .r-del:hover{opacity:1;}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(90,62,53,.92);color:#fff;padding:8px 18px;border-radius:50px;
+  font-size:.84rem;font-weight:700;z-index:999;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#fde8f0 0%,#fef3e2 40%,#fad0c4 100%);}
+.login-card{background:rgba(255,255,255,.93);border-radius:30px;padding:42px 36px;text-align:center;
+  max-width:360px;width:90%;box-shadow:0 24px 80px rgba(139,94,82,.2);border:2.5px solid rgba(255,183,197,.4);}
+.login-bunny{font-size:4.2rem;margin-bottom:9px;}
+.login-title{font-family:'Caveat',cursive;font-size:2.5rem;font-weight:700;color:var(--brown);margin-bottom:5px;}
+.login-sub{font-size:.86rem;color:#bbb;margin-bottom:24px;line-height:1.55;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:12px;background:white;border:2px solid rgba(0,0,0,.1);border-radius:50px;
+  font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;transition:.2s;color:#3c4043;}
+.google-btn:hover{background:#f8f9fa;box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px);}
+.guest-btn{margin-top:9px;background:rgba(255,183,197,.3);border:2px solid rgba(255,183,197,.5);
+  border-radius:50px;padding:9px 20px;font-family:inherit;font-size:.84rem;font-weight:700;cursor:pointer;transition:.2s;color:var(--text);width:100%;}
+.guest-btn:hover{background:var(--pink);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,183,197,.6);border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="bg-layer bg-spring" id="bgLayer"></div>
+<div id="particles"></div>
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-bunny">🐰</div>
+    <div class="login-title">BunnyCal ✨</div>
+    <div class="login-sub">Your cute personal calendar.<br>Sign in to sync across all devices!</div>
+    <button class="google-btn" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <button class="guest-btn" onclick="continueAsGuest()">🐰 Continue as Guest</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <header>
+    <div class="logo"><span class="b">🐰 Bunny</span><span class="c">Cal</span></div>
+    <div class="header-btns">
+      <button class="hbtn active" onclick="setView('calendar',this)">📅 Calendar</button>
+      <button class="hbtn" onclick="setView('routine',this)">🌿 Daily Routine</button>
+      <button class="hbtn" onclick="setView('bucket',this)">🗺 Bucket List</button>
+      <button class="hbtn" onclick="setView('shopping',this)">🛒 Shopping</button>
+      <button class="hbtn" onclick="setView('events',this)">🎪 Events</button>
+      <button class="hbtn" onclick="setView('hobbies',this)">🌸 Hobbies</button>
+      <button class="hbtn" onclick="openModal('add-event')">➕ Add Event</button>
+      <button class="hbtn" onclick="openModal('reminders')">⏰ Reminders</button>
+      <button class="hbtn" onclick="openModal('gallery-modal')">🖼️ Gallery</button>
+      <div id="user-area"></div>
+    </div>
+  </header>
+
+  <!-- MUSIC -->
+  <div id="music-bar">
+    <span class="music-label">🎵 VIBES:</span>
+    <button class="music-track" onclick="playTrack('cozy')"   id="track-cozy">🍵 Cozy</button>
+    <button class="music-track" onclick="playTrack('rain')"   id="track-rain">🌧 Rain</button>
+    <button class="music-track" onclick="playTrack('forest')" id="track-forest">🌿 Forest</button>
+    <button class="music-track" onclick="playTrack('stars')"  id="track-stars">⭐ Stars</button>
+    <button class="music-track" onclick="openModal('spotify')">🎷 Jazz</button>
+    <button class="music-track" onclick="stopMusic()" style="opacity:.6">⏹ Stop</button>
+    <input class="vol-slider" type="range" min="0" max="1" step=".05" value=".4" oninput="setVol(this.value)">
+    <span id="music-status" style="font-size:.72rem;color:#3a9a72;font-weight:700;"></span>
+  </div>
+
+  <!-- VIEW TABS (calendar only) -->
+  <div class="view-tabs" id="viewTabs">
+    <button class="vtab active" onclick="setMainTab('month',this)">Month</button>
+    <button class="vtab" onclick="setMainTab('todo',this)">📝 To-Do</button>
+  </div>
+
+  <div id="main-area">
+    <div id="left-panel">
+
+      <!-- MONTH VIEW -->
+      <div id="view-month" class="panel">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+          <div class="cal-month" id="cal-month-label"></div>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+
+      <!-- TODO VIEW -->
+      <div id="view-todo" class="panel" style="display:none">
+        <div class="panel-title">📝 Today's To-Do</div>
+        <div class="todo-add">
+          <input class="todo-input" id="todo-main-input" placeholder="Add a task… 🐰" onkeydown="if(event.key==='Enter')addTodo('main')">
+          <button class="add-btn" onclick="addTodo('main')">+</button>
+        </div>
+        <div class="todo-list" id="todo-main-list"></div>
+      </div>
+
+      <!-- ══ DAILY ROUTINE VIEW ══ -->
+      <div id="view-routine" class="panel" style="display:none">
+        <div class="routine-date-strip">
+          <button class="routine-date-nav" onclick="changeRoutineDay(-1)">‹</button>
+          <div class="routine-date-label" id="routine-date-label"></div>
+          <button class="routine-date-nav" onclick="changeRoutineDay(1)">›</button>
+          <button onclick="goRoutineToday()" style="font-size:.72rem;background:rgba(255,183,197,.3);border:none;border-radius:50px;padding:4px 10px;cursor:pointer;font-weight:700;font-family:inherit;">Today</button>
+        </div>
+        <div class="routine-sections" id="routine-sections"></div>
+        <!-- Add custom section -->
+        <div class="add-section-row">
+          <span style="font-size:.78rem;font-weight:700;color:var(--pink-deep);">+ New Section:</span>
+          <input class="add-section-input" id="new-section-icon" placeholder="🌟 icon" style="width:60px;min-width:0;text-align:center;">
+          <input class="add-section-input" id="new-section-name" placeholder="Section name" onkeydown="if(event.key==='Enter')addRoutineSection()">
+          <button class="add-section-btn" onclick="addRoutineSection()">Add</button>
+        </div>
+      </div>
+
+      <!-- ══ BUCKET LIST VIEW ══ -->
+      <div id="view-bucket" class="panel" style="display:none">
+        <div class="panel-title">🗺 My Bucket List</div>
+        <div class="bucket-tabs" id="bucket-tabs">
+          <button class="btab active" onclick="setBucketTab('all',this)">✨ All</button>
+          <button class="btab" onclick="setBucketTab('places',this)">📍 Places</button>
+          <button class="btab" onclick="setBucketTab('activities',this)">🎯 Activities</button>
+          <button class="btab" onclick="setBucketTab('food',this)">🍜 Food</button>
+          <button class="btab" onclick="setBucketTab('experiences',this)">🌟 Experiences</button>
+        </div>
+        <!-- Add bucket item -->
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;padding:12px;background:rgba(253,246,227,.5);border-radius:14px;border:2px dashed rgba(255,183,197,.4);">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <input class="bucket-add-input" id="bucket-name-input" placeholder="What do you want to do? ✨" style="flex:1;" onkeydown="if(event.key==='Enter')addBucketItem()">
+            <select class="bucket-cat-select" id="bucket-cat-select">
+              <option value="places">📍 Place</option>
+              <option value="activities">🎯 Activity</option>
+              <option value="food">🍜 Food</option>
+              <option value="experiences">🌟 Experience</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <input class="bucket-add-input" id="bucket-note-input" placeholder="Notes, location, why… (optional)" style="flex:1;">
+            <button class="add-section-btn" onclick="addBucketItem()">Add ✨</button>
+          </div>
+        </div>
+        <div class="bucket-list" id="bucket-list"></div>
+      </div>
+
+      <!-- EVENTS FULL -->
+      <div id="view-events-full" class="panel" style="display:none">
+        <div class="panel-title">🎪 All Events</div>
+        <div id="events-full-list" class="event-list" style="max-height:none;"></div>
+      </div>
+
+      <!-- HOBBIES -->
+      <div id="view-hobbies-full" class="panel" style="display:none">
+        <div class="panel-title">🌸 My Hobbies</div>
+        <div class="hobby-grid" id="hobby-grid"></div>
+      </div>
+
+      <!-- 🛒 SHOPPING LIST -->
+      <div id="view-shopping" class="panel" style="display:none">
+        <div class="panel-title">🛒 Shopping List</div>
+        <!-- Stats bar -->
+        <div class="shop-stats" id="shop-stats"></div>
+        <!-- Category filter -->
+        <div class="shop-cats" id="shop-cats">
+          <button class="shop-cat-btn active" onclick="setShopCat('all',this)">🧺 All</button>
+          <button class="shop-cat-btn" onclick="setShopCat('grocery',this)">🥦 Grocery</button>
+          <button class="shop-cat-btn" onclick="setShopCat('health',this)">💊 Health</button>
+          <button class="shop-cat-btn" onclick="setShopCat('home',this)">🏠 Home</button>
+          <button class="shop-cat-btn" onclick="setShopCat('beauty',this)">💄 Beauty</button>
+          <button class="shop-cat-btn" onclick="setShopCat('clothes',this)">👗 Clothes</button>
+          <button class="shop-cat-btn" onclick="setShopCat('other',this)">📦 Other</button>
+        </div>
+        <!-- Add item -->
+        <div class="shop-add-row">
+          <input id="shop-name-input" placeholder="What do you need? 🛒" onkeydown="if(event.key==='Enter')addShopItem()">
+          <input id="shop-qty-input" type="number" min="1" value="1" placeholder="Qty" style="">
+          <select id="shop-cat-input">
+            <option value="grocery">🥦 Grocery</option>
+            <option value="health">💊 Health</option>
+            <option value="home">🏠 Home</option>
+            <option value="beauty">💄 Beauty</option>
+            <option value="clothes">👗 Clothes</option>
+            <option value="other">📦 Other</option>
+          </select>
+          <input id="shop-note-input" placeholder="Note / brand (optional)">
+          <button class="add-section-btn" onclick="addShopItem()" style="background:rgba(168,220,197,.3);border-color:rgba(168,220,197,.5);">Add 🛒</button>
+        </div>
+        <div class="shop-list" id="shop-list"></div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="panel">
+        <div class="panel-title">🗓 Coming Up</div>
+        <div class="event-list" id="upcoming-list"></div>
+        <button class="form-btn" style="margin-top:8px" onclick="openModal('add-event')">+ New Event</button>
+      </div>
+      <div class="panel">
+        <div class="panel-title">✅ Quick To-Do</div>
+        <div class="todo-add">
+          <input class="todo-input" id="todo-quick-input" placeholder="Quick task…" onkeydown="if(event.key==='Enter')addTodo('quick')">
+          <button class="add-btn" onclick="addTodo('quick')">+</button>
+        </div>
+        <div class="todo-list" id="todo-quick-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">🎨 Theme</div>
+        <div class="bg-btns">
+          <button class="bg-choice bgc-spring" onclick="setBg('spring')">🌸 Spring</button>
+          <button class="bg-choice bgc-forest"  onclick="setBg('forest')">🌲 Forest</button>
+          <button class="bg-choice bgc-ocean"   onclick="setBg('ocean')">🌊 Ocean</button>
+          <button class="bg-choice bgc-sunset"  onclick="setBg('sunset')">🌅 Sunset</button>
+          <button class="bg-choice bgc-night"   onclick="setBg('night')">🌙 Night</button>
+        </div>
+        <div style="margin-top:8px;font-size:.74rem;color:var(--pink-deep);font-weight:700;">Particles:</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">
+          <button class="music-track" onclick="setParticles('sakura')">🌸</button>
+          <button class="music-track" onclick="setParticles('stars')">⭐</button>
+          <button class="music-track" onclick="setParticles('leaves')">🍃</button>
+          <button class="music-track" onclick="setParticles('snow')">❄️</button>
+          <button class="music-track" onclick="setParticles('hearts')">💕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+<!-- ADD EVENT -->
+<div id="modal-add-event" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('add-event')">✕</button>
+    <div class="modal-title">✨ New Event</div>
+    <div class="form-row"><label>Event Name</label><input class="form-input" id="ev-name" placeholder="e.g. Tea Party 🍵"></div>
+    <div class="form-row"><label>Date</label><input class="form-input" type="date" id="ev-date"></div>
+    <div class="form-row"><label>Time (optional)</label><input class="form-input" type="time" id="ev-time"></div>
+    <div class="form-row"><label>Color</label>
+      <select class="form-select" id="ev-color">
+        <option value="#ffb7c5">🩷 Pink</option><option value="#c9b8e8">💜 Lavender</option>
+        <option value="#a8dcc5">💚 Mint</option><option value="#ffe49a">💛 Yellow</option>
+        <option value="#ffcba4">🧡 Peach</option><option value="#b5ead7">🩵 Sage</option>
+      </select>
+    </div>
+    <div class="form-row"><label>🐾 Stamp</label>
+      <div id="ev-stamp-pick" style="display:flex;flex-wrap:wrap;gap:4px;padding:7px;background:rgba(253,246,227,.5);border-radius:12px;"></div>
+    </div>
+    <div class="form-row"><label>Note</label><textarea class="form-textarea" id="ev-note" placeholder="Write anything… 🐰"></textarea></div>
+    <div class="form-row"><label>📷 Picture</label><input type="file" id="ev-pic" accept="image/*" class="form-input" style="padding:5px;"></div>
+    <div class="form-row"><label>⏰ Reminder</label>
+      <select class="form-select" id="ev-reminder">
+        <option value="">No reminder</option><option value="0">At event time</option>
+        <option value="15">15 min before</option><option value="60">1 hour before</option>
+        <option value="1440">1 day before</option>
+      </select>
+    </div>
+    <button class="form-btn" onclick="saveEvent()">Save Event 🐰</button>
+  </div>
+</div>
+
+<!-- DAY NOTE -->
+<div id="modal-day-note" class="modal-overlay" style="display:none">
+  <div class="note-card">
+    <button class="modal-close" onclick="closeModal('day-note')">✕</button>
+    <div class="note-header">
+      <div class="note-stamp-big" id="note-stamp-big">🐰</div>
+      <div><div class="note-event-name" id="note-event-name"></div><div class="note-date" id="note-event-date"></div></div>
+    </div>
+    <textarea class="note-textarea" id="note-text" placeholder="Write your diary, thoughts, plans… 🌸"></textarea>
+    <div class="note-img-area">
+      <input type="file" id="note-pic-input" accept="image/*" style="display:none" onchange="previewNotePic(event)">
+      <button class="note-btn" style="margin-top:7px" onclick="document.getElementById('note-pic-input').click()">📷 Add Photo</button>
+      <img id="note-pic-preview" src="" style="display:none">
+    </div>
+    <div class="note-actions">
+      <button class="note-btn" onclick="saveNote()">💾 Save</button>
+      <button class="note-btn" onclick="openEditEvent()">✏️ Edit</button>
+      <button class="note-btn danger" onclick="deleteCurrentEvent()">🗑️ Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT EVENT -->
+<div id="modal-edit-event" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('edit-event')">✕</button>
+    <div class="modal-title">✏️ Edit Event</div>
+    <div class="form-row"><label>Name</label><input class="form-input" id="edit-ev-name"></div>
+    <div class="form-row"><label>Date</label><input class="form-input" type="date" id="edit-ev-date"></div>
+    <div class="form-row"><label>Time</label><input class="form-input" type="time" id="edit-ev-time"></div>
+    <div class="form-row"><label>Color</label>
+      <select class="form-select" id="edit-ev-color">
+        <option value="#ffb7c5">🩷 Pink</option><option value="#c9b8e8">💜 Lavender</option>
+        <option value="#a8dcc5">💚 Mint</option><option value="#ffe49a">💛 Yellow</option>
+        <option value="#ffcba4">🧡 Peach</option><option value="#b5ead7">🩵 Sage</option>
+      </select>
+    </div>
+    <div class="form-row"><label>🐾 Stamp</label>
+      <div id="edit-ev-stamp-pick" style="display:flex;flex-wrap:wrap;gap:4px;padding:7px;background:rgba(253,246,227,.5);border-radius:12px;"></div>
+    </div>
+    <div class="form-row"><label>Note</label><textarea class="form-textarea" id="edit-ev-note"></textarea></div>
+    <button class="form-btn" onclick="updateEvent()">Update 🌸</button>
+  </div>
+</div>
+
+<!-- REMINDERS -->
+<div id="modal-reminders" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('reminders')">✕</button>
+    <div class="modal-title">⏰ Reminders</div>
+    <div class="reminder-list" id="reminder-list"></div>
+    <p style="margin-top:10px;font-size:.74rem;color:var(--pink-deep);font-weight:700;">Allow browser notifications so reminders fire!</p>
+  </div>
+</div>
+
+<!-- GALLERY -->
+<div id="modal-gallery-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('gallery-modal')">✕</button>
+    <div class="modal-title">🖼️ My Gallery</div>
+    <input type="file" id="gallery-upload" accept="image/*" style="margin-bottom:10px" onchange="addToGallery(event)">
+    <div class="gallery" id="gallery-grid"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="modal-lightbox" class="modal-overlay" style="display:none" onclick="closeModal('lightbox')">
+  <img id="lightbox-img" src="" style="max-width:600px;width:93vw;border-radius:16px;margin:auto;display:block">
+</div>
+
+<!-- SPOTIFY -->
+<div id="modal-spotify" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:370px">
+    <button class="modal-close" onclick="closeModal('spotify')">✕</button>
+    <div class="modal-title">🎷 Jazz Vibes</div>
+    <iframe style="border-radius:12px;width:100%;height:152px;border:none;"
+      src="https://open.spotify.com/embed/playlist/0BS0s5p1e40lTuhcE0mVN1?utm_source=generator&theme=0"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    <p style="margin-top:8px;font-size:.74rem;color:#bbb;text-align:center;">Needs Spotify for full playback</p>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════
+const STAMPS=['🐰','🐱','🐻','🦊','🐼','🐨','🦋','🌸','⭐','🍀','🌈','🍭','🧸','🐸','🦄','🍄','🌙','🎀','🍓','🍩','🐝','🦔'];
+const LSKEY='bunnycal_v3';
+
+const DEFAULT_SECTIONS=[
+  {id:'health', icon:'💪', name:'Health',   color:'rs-health', tasks:[]},
+  {id:'soul',   icon:'🧘', name:'Soul',     color:'rs-soul',   tasks:[]},
+  {id:'brain',  icon:'🧠', name:'Brain',    color:'rs-brain',  tasks:[]},
+];
+
+let currentUser=null;
+let state={
+  events:[], todos:{main:[],quick:[]}, notes:{}, gallery:[], reminders:[],
+  bg:'spring', particles:'sakura',
+  routine:{},      // keyed by date string -> { sections:[{id,icon,name,color,tasks:[{id,text,done}]}] }
+  customSections:[], // [{id,icon,name}] — user-defined section templates
+  bucket:[],       // [{id,name,cat,note,done,createdAt}]
+  shopping:[]      // [{id,name,qty,cat,note,got,createdAt}]
+};
+
+function lsSave(){ try{localStorage.setItem(LSKEY,JSON.stringify(state));}catch(e){} }
+function lsLoad(){ try{const d=localStorage.getItem(LSKEY); if(d){const p=JSON.parse(d); Object.assign(state,p);}}catch(e){} }
+
+let currentDate=new Date();
+let currentMonth=new Date(currentDate.getFullYear(),currentDate.getMonth(),1);
+let currentMainTab='month';
+let currentEventId=null;
+let currentView='calendar';
+let routineDate=new Date();
+let currentBucketTab='all';
+let audioCtx=null, musicInterval=null, musicVol=.4;
+
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+
+// Twemoji: parse a DOM node (or whole body) to replace emoji with consistent SVG images
+function twparse(el){ if(window.twemoji) twemoji.parse(el||document.body,{folder:'svg',ext:'.svg'}); }
+
+window.addEventListener('DOMContentLoaded',()=>{
+  buildStampPicker('ev-stamp-pick','🐰');
+  buildStampPicker('edit-ev-stamp-pick','🐰');
+  // Parse static HTML emojis immediately (login screen, buttons, etc.)
+  twparse(document.body);
+  const fb=window._fb;
+  if(!fb){continueAsGuest();return;}
+  fb.onAuthStateChanged(fb.auth,async user=>{
+    if(user){currentUser=user;await loadFromFirestore();showApp();}
+  });
+});
+
+// ══════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════
+async function signInGoogle(){
+  const fb=window._fb; if(!fb) return;
+  try{await fb.signInWithPopup(fb.auth,fb.provider);}catch(e){toast('Sign-in failed: '+e.message);}
+}
+function continueAsGuest(){ currentUser=null; lsLoad(); showApp(); }
+async function signOutUser(){
+  const fb=window._fb;
+  if(currentUser&&fb) await fb.signOut(fb.auth);
+  currentUser=null;
+  state={events:[],todos:{main:[],quick:[]},notes:{},gallery:[],reminders:[],bg:'spring',particles:'sakura',routine:{},customSections:[],bucket:[],shopping:[]};
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  renderUserArea();
+  document.getElementById('ev-date').value=fmt(new Date());
+  renderCalendar(); renderUpcoming(); renderTodos(); renderGallery();
+  setBg(state.bg,true); setParticles(state.particles,true);
+  requestNotificationPermission(); scheduleReminders();
+  routineDate=new Date(); renderRoutine();
+  renderBucket(); renderShopping();
+  // Re-parse all emojis after app content loads
+  setTimeout(()=>twparse(document.body), 100);
+}
+function renderUserArea(){
+  const area=document.getElementById('user-area');
+  if(currentUser){
+    area.innerHTML=`<div class="user-chip"><img class="user-avatar" src="${currentUser.photoURL||''}" onerror="this.style.display='none'"><span class="user-name">${(currentUser.displayName||'You').split(' ')[0]}</span><button class="hbtn" style="padding:3px 9px;font-size:.7rem" onclick="signOutUser()">Sign Out</button></div>`;
+  } else {
+    area.innerHTML=`<button class="sign-in-btn" onclick="signInGoogle()">☁️ Save to Cloud</button>`;
+  }
+}
+
+// ══════════════════════════════════════
+// FIRESTORE
+// ══════════════════════════════════════
+async function loadFromFirestore(){
+  const fb=window._fb; if(!fb||!currentUser) return;
+  try{
+    const snap=await fb.getDoc(fb.doc(fb.db,'users',currentUser.uid));
+    if(snap.exists()){const d=snap.data(); Object.assign(state,{todos:d.todos||state.todos,notes:d.notes||{},reminders:d.reminders||[],bg:d.bg||'spring',particles:d.particles||'sakura',routine:d.routine||{},customSections:d.customSections||[],bucket:d.bucket||[],shopping:d.shopping||[]});}
+    const evSnap=await fb.getDocs(fb.collection(fb.db,'users',currentUser.uid,'events'));
+    state.events=[]; evSnap.forEach(d=>state.events.push({id:d.id,...d.data()}));
+    const g=localStorage.getItem('bunnycal_gallery'); state.gallery=g?JSON.parse(g):[];
+  }catch(e){console.warn(e);}
+}
+async function cloudSaveMeta(){
+  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
+  try{await fb.setDoc(fb.doc(fb.db,'users',currentUser.uid),{todos:state.todos,notes:state.notes,reminders:state.reminders,bg:state.bg,particles:state.particles,routine:state.routine,customSections:state.customSections,bucket:state.bucket,shopping:state.shopping||[]},{merge:true});}catch(e){console.warn(e);}
+}
+async function cloudSaveEvent(ev){
+  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
+  const {id,...d}=ev; try{await fb.setDoc(fb.doc(fb.db,'users',currentUser.uid,'events',id),d);}catch(e){console.warn(e);}
+}
+async function cloudDeleteEvent(id){
+  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
+  try{await fb.deleteDoc(fb.doc(fb.db,'users',currentUser.uid,'events',id));}catch(e){console.warn(e);}
+}
+function save(){ if(currentUser) cloudSaveMeta(); else lsSave(); localStorage.setItem('bunnycal_gallery',JSON.stringify(state.gallery)); }
+
+// ══════════════════════════════════════
+// STAMP PICKER
+// ══════════════════════════════════════
+function buildStampPicker(cid,def){
+  const c=document.getElementById(cid); if(!c) return; c.innerHTML='';
+  STAMPS.forEach(s=>{
+    const b=document.createElement('button'); b.type='button';
+    b.className='stamp-btn'+(s===def?' selected':''); b.textContent=s; b.dataset.stamp=s;
+    b.onclick=()=>{c.querySelectorAll('.stamp-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');};
+    c.appendChild(b);
+  });
+}
+function getStamp(cid){ const el=document.querySelector('#'+cid+' .stamp-btn.selected'); return el?el.dataset.stamp:'🐰'; }
+
+// ══════════════════════════════════════
+// CALENDAR
+// ══════════════════════════════════════
+function renderCalendar(){
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent=MONTHS[currentMonth.getMonth()]+' '+currentMonth.getFullYear();
+  const grid=document.getElementById('cal-grid'); grid.innerHTML='';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+  const first=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1);
+  const last=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,0);
+  const pad=first.getDay(),total=pad+last.getDate(),cells=total%7===0?total:total+(7-total%7);
+  for(let i=0;i<cells;i++){
+    const d=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1+(i-pad));
+    const ds=fmt(d), isThisMonth=d.getMonth()===currentMonth.getMonth(), isToday=ds===fmt(currentDate);
+    const dayEvents=state.events.filter(e=>e.date===ds);
+    const hasReminder=state.reminders.some(r=>r.date===ds);
+    const cell=document.createElement('div');
+    cell.className='cal-day'+(isToday?' today':'')+(!isThisMonth?' other-month':'');
+    const numEl=document.createElement('span'); numEl.className='day-num'; numEl.textContent=d.getDate(); cell.appendChild(numEl);
+    dayEvents.slice(0,3).forEach(ev=>{
+      const pill=document.createElement('button'); pill.type='button'; pill.className='cal-ev-pill';
+      pill.style.background=(ev.color||'#ffb7c5')+'55'; pill.style.color=darken(ev.color||'#ffb7c5');
+      pill.textContent=(ev.stamp||'📅')+' '+ev.name;
+      pill.onclick=e=>{e.stopPropagation();openEventNote(ev);};
+      cell.appendChild(pill);
+    });
+    if(dayEvents.length>3){const m=document.createElement('div');m.style.cssText='font-size:.55rem;color:var(--pink-deep);font-weight:800;padding-left:3px;';m.textContent=`+${dayEvents.length-3} more`;cell.appendChild(m);}
+    if(hasReminder){const rd=document.createElement('div');rd.className='reminder-dot';cell.appendChild(rd);}
+    if(dayEvents.length&&!isToday) cell.style.borderColor=dayEvents[0].color||'transparent';
+    cell.addEventListener('click',()=>onDayClick(ds));
+    grid.appendChild(cell);
+  }
+  twparse(grid);
+}
+function darken(hex){try{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgb(${Math.round(r*.5)},${Math.round(g*.5)},${Math.round(b*.5)})`;}catch(e){return '#5a3e35';}}
+function onDayClick(ds){
+  const dayEvents=state.events.filter(e=>e.date===ds);
+  if(!dayEvents.length){document.getElementById('ev-date').value=ds;resetAddForm();openModal('add-event');}
+  else openEventNote(dayEvents[0]);
+}
+function changeMonth(d){currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+d,1);renderCalendar();}
+
+// ══════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════
+function resetAddForm(){
+  ['ev-name','ev-note'].forEach(id=>document.getElementById(id).value='');
+  ['ev-time','ev-reminder'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ev-color').value='#ffb7c5';
+  try{document.getElementById('ev-pic').value='';}catch(e){}
+  buildStampPicker('ev-stamp-pick','🐰');
+}
+async function saveEvent(){
+  const name=document.getElementById('ev-name').value.trim(), date=document.getElementById('ev-date').value;
+  if(!name||!date){toast('Please fill name & date! 🐰');return;}
+  const stamp=getStamp('ev-stamp-pick'), color=document.getElementById('ev-color').value;
+  const note=document.getElementById('ev-note').value, time=document.getElementById('ev-time').value;
+  const reminder=document.getElementById('ev-reminder').value;
+  const picFile=document.getElementById('ev-pic').files[0], id=Date.now().toString();
+  const finish=pic=>{
+    const ev={id,name,date,time,color,stamp,note,pic:pic||''};
+    state.events.push(ev);
+    if(reminder!=='') state.reminders.push({id,name,date,time,minsBefore:parseInt(reminder),stamp});
+    cloudSaveEvent(ev); save(); renderCalendar(); renderUpcoming(); closeModal('add-event'); toast('Event saved! '+stamp);
+  };
+  if(picFile){const fr=new FileReader();fr.onload=e=>finish(e.target.result);fr.readAsDataURL(picFile);}else finish('');
+}
+function renderUpcoming(){
+  const list=document.getElementById('upcoming-list'); list.innerHTML='';
+  const today=fmt(currentDate);
+  const sorted=[...state.events].filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  if(!sorted.length){list.innerHTML='<div style="font-size:.78rem;opacity:.5;text-align:center;padding:11px">No upcoming events 🐰</div>';twparse(list);return;}
+  sorted.forEach(ev=>list.appendChild(makeChip(ev)));
+  twparse(list);
+}
+function renderEventsFull(){
+  const list=document.getElementById('events-full-list'); list.innerHTML='';
+  const sorted=[...state.events].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!sorted.length){list.innerHTML='<div style="font-size:.78rem;opacity:.5;text-align:center;padding:11px">No events yet 🐰</div>';return;}
+  sorted.forEach(ev=>list.appendChild(makeChip(ev)));
+}
+function makeChip(ev){
+  const c=document.createElement('div'); c.className='event-chip'; c.style.borderLeftColor=ev.color||'var(--pink)';
+  c.innerHTML=`<span class="stamp">${ev.stamp||'📅'}</span><div class="info"><div class="etitle">${ev.name}</div><div class="edate">${formatDate(ev.date)}${ev.time?' · '+ev.time:''}</div></div>`;
+  c.onclick=()=>openEventNote(ev); return c;
+}
+function openEventNote(ev){
+  currentEventId=ev.id;
+  document.getElementById('note-stamp-big').textContent=ev.stamp||'🐰';
+  document.getElementById('note-event-name').textContent=ev.name;
+  document.getElementById('note-event-date').textContent=formatDate(ev.date)+(ev.time?' · '+ev.time:'');
+  const saved=state.notes[ev.id]||{};
+  document.getElementById('note-text').value=saved.text||ev.note||'';
+  const prev=document.getElementById('note-pic-preview'), src=saved.pic||ev.pic||'';
+  prev.src=src; prev.style.display=src?'block':'none';
+  openModal('day-note');
+}
+function saveNote(){
+  if(!currentEventId) return;
+  state.notes[currentEventId]={text:document.getElementById('note-text').value,pic:document.getElementById('note-pic-preview').src};
+  save(); closeModal('day-note'); toast('Note saved 🌸');
+}
+function previewNotePic(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const fr=new FileReader(); fr.onload=e=>{const p=document.getElementById('note-pic-preview');p.src=e.target.result;p.style.display='block';}; fr.readAsDataURL(file);
+}
+async function deleteCurrentEvent(){
+  if(!currentEventId) return;
+  state.events=state.events.filter(e=>e.id!==currentEventId);
+  delete state.notes[currentEventId]; state.reminders=state.reminders.filter(r=>r.id!==currentEventId);
+  await cloudDeleteEvent(currentEventId); save(); closeModal('day-note'); renderCalendar(); renderUpcoming(); toast('Deleted 🗑️');
+}
+function openEditEvent(){
+  const ev=state.events.find(e=>e.id===currentEventId); if(!ev) return;
+  document.getElementById('edit-ev-name').value=ev.name;
+  document.getElementById('edit-ev-date').value=ev.date;
+  document.getElementById('edit-ev-time').value=ev.time||'';
+  document.getElementById('edit-ev-color').value=ev.color||'#ffb7c5';
+  document.getElementById('edit-ev-note').value=ev.note||'';
+  buildStampPicker('edit-ev-stamp-pick',ev.stamp||'🐰');
+  closeModal('day-note'); openModal('edit-event');
+}
+async function updateEvent(){
+  const ev=state.events.find(e=>e.id===currentEventId); if(!ev) return;
+  ev.name=document.getElementById('edit-ev-name').value.trim();
+  ev.date=document.getElementById('edit-ev-date').value;
+  ev.time=document.getElementById('edit-ev-time').value;
+  ev.color=document.getElementById('edit-ev-color').value;
+  ev.note=document.getElementById('edit-ev-note').value;
+  ev.stamp=getStamp('edit-ev-stamp-pick');
+  await cloudSaveEvent(ev); save(); renderCalendar(); renderUpcoming(); closeModal('edit-event'); toast('Updated 🌸');
+}
+
+// ══════════════════════════════════════
+// TODOS
+// ══════════════════════════════════════
+function addTodo(list){
+  const input=document.getElementById(`todo-${list}-input`), text=input.value.trim(); if(!text) return;
+  (state.todos[list]=state.todos[list]||[]).push({id:Date.now(),text,done:false});
+  input.value=''; save(); renderTodos();
+}
+function renderTodos(){
+  ['main','quick'].forEach(list=>{
+    const el=document.getElementById(`todo-${list}-list`); if(!el) return; el.innerHTML='';
+    (state.todos[list]||[]).forEach(t=>{
+      const item=document.createElement('div'); item.className='todo-item'+(t.done?' done':'');
+      item.innerHTML=`<input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo('${list}','${t.id}')"><span>${t.text}</span><button class="del-btn" onclick="deleteTodo('${list}','${t.id}')">🗑</button>`;
+      el.appendChild(item);
+    });
+  });
+}
+function toggleTodo(list,id){const t=(state.todos[list]||[]).find(x=>x.id==id);if(t){t.done=!t.done;save();renderTodos();}}
+function deleteTodo(list,id){state.todos[list]=(state.todos[list]||[]).filter(x=>x.id!=id);save();renderTodos();}
+
+// ══════════════════════════════════════
+// DAILY ROUTINE
+// ══════════════════════════════════════
+function getRoutineKey(d){ return fmt(d); }
+
+function getRoutineDay(dateKey){
+  if(!state.routine) state.routine={};
+  if(!state.routine[dateKey]){
+    // Build fresh from default + custom sections
+    const allSections=[...DEFAULT_SECTIONS, ...(state.customSections||[]).map(s=>({...s,color:'rs-custom'}))];
+    state.routine[dateKey]={ sections: allSections.map(s=>({...s, tasks:[...s.tasks||[]]})) };
+  }
+  return state.routine[dateKey];
+}
+
+function renderRoutine(){
+  const key=getRoutineKey(routineDate);
+  const day=getRoutineDay(key);
+  const label=document.getElementById('routine-date-label');
+  const isToday=key===fmt(currentDate);
+  const isYesterday=key===fmt(new Date(currentDate-86400000));
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  label.textContent = isToday ? '🌟 Today' : isYesterday ? '⬅️ Yesterday' : days[routineDate.getDay()]+', '+formatDate(key);
+
+  const container=document.getElementById('routine-sections'); container.innerHTML='';
+  day.sections.forEach((sec,si)=>{
+    const total=sec.tasks.length, done=sec.tasks.filter(t=>t.done).length;
+    const pct=total>0?Math.round(done/total*100):0;
+    const div=document.createElement('div');
+    div.className='routine-section '+sec.color;
+    div.innerHTML=`
+      <div class="rs-header">
+        <span class="rs-icon">${sec.icon}</span>
+        <span class="rs-title">${sec.name}</span>
+        <span style="font-size:.7rem;font-weight:700;opacity:.6">${done}/${total}</span>
+        ${sec.id!=='health'&&sec.id!=='soul'&&sec.id!=='brain'?`<button class="rs-del-section" onclick="deleteRoutineSection('${key}',${si})" title="Remove section">✕</button>`:''}
+      </div>
+      <div class="rs-progress"><div class="rs-progress-bar" style="width:${pct}%"></div></div>
+      <div class="rs-tasks" id="rs-tasks-${si}"></div>
+      <div class="rs-add">
+        <input class="rs-add-input" id="rs-input-${si}" placeholder="Add habit or task…" onkeydown="if(event.key==='Enter')addRoutineTask('${key}',${si})">
+        <button class="rs-add-btn" onclick="addRoutineTask('${key}',${si})">+</button>
+      </div>`;
+    container.appendChild(div);
+    const taskContainer=div.querySelector(`#rs-tasks-${si}`);
+    sec.tasks.forEach((t,ti)=>{
+      const item=document.createElement('div'); item.className='rs-task'+(t.done?' done-task':'');
+      item.innerHTML=`<input type="checkbox" ${t.done?'checked':''} onchange="toggleRoutineTask('${key}',${si},${ti})"><span>${t.text}</span><button class="del-btn" onclick="deleteRoutineTask('${key}',${si},${ti})">✕</button>`;
+      taskContainer.appendChild(item);
+    });
+  });
+  twparse(container);
+}
+
+function addRoutineTask(dateKey,si){
+  const input=document.getElementById(`rs-input-${si}`);
+  const text=input.value.trim(); if(!text) return;
+  const day=getRoutineDay(dateKey);
+  day.sections[si].tasks.push({id:Date.now(),text,done:false});
+  input.value=''; save(); renderRoutine();
+}
+function toggleRoutineTask(dateKey,si,ti){
+  const day=getRoutineDay(dateKey);
+  day.sections[si].tasks[ti].done=!day.sections[si].tasks[ti].done;
+  save(); renderRoutine();
+}
+function deleteRoutineTask(dateKey,si,ti){
+  const day=getRoutineDay(dateKey);
+  day.sections[si].tasks.splice(ti,1);
+  save(); renderRoutine();
+}
+function deleteRoutineSection(dateKey,si){
+  const day=getRoutineDay(dateKey);
+  day.sections.splice(si,1);
+  save(); renderRoutine();
+}
+function addRoutineSection(){
+  const icon=document.getElementById('new-section-icon').value.trim()||'🌟';
+  const name=document.getElementById('new-section-name').value.trim(); if(!name) return;
+  const id='custom_'+Date.now();
+  // Save to customSections template
+  if(!state.customSections) state.customSections=[];
+  state.customSections.push({id,icon,name,tasks:[]});
+  // Also add to current day
+  const key=getRoutineKey(routineDate);
+  const day=getRoutineDay(key);
+  day.sections.push({id,icon,name,color:'rs-custom',tasks:[]});
+  document.getElementById('new-section-icon').value='';
+  document.getElementById('new-section-name').value='';
+  save(); renderRoutine(); toast('Section added! '+icon);
+}
+function changeRoutineDay(d){ routineDate=new Date(routineDate); routineDate.setDate(routineDate.getDate()+d); renderRoutine(); }
+function goRoutineToday(){ routineDate=new Date(); renderRoutine(); }
+
+// ══════════════════════════════════════
+// BUCKET LIST
+// ══════════════════════════════════════
+const BUCKET_CAT_INFO={
+  places:     {icon:'📍', label:'Places',      color:'#ffb7c5'},
+  activities: {icon:'🎯', label:'Activities',  color:'#c9b8e8'},
+  food:       {icon:'🍜', label:'Food',         color:'#ffe49a'},
+  experiences:{icon:'🌟', label:'Experiences', color:'#a8dcc5'},
+};
+
+function addBucketItem(){
+  const name=document.getElementById('bucket-name-input').value.trim(); if(!name) return;
+  const cat=document.getElementById('bucket-cat-select').value;
+  const note=document.getElementById('bucket-note-input').value.trim();
+  const item={id:Date.now().toString(),name,cat,note,done:false,createdAt:Date.now()};
+  if(!state.bucket) state.bucket=[];
+  state.bucket.push(item);
+  document.getElementById('bucket-name-input').value='';
+  document.getElementById('bucket-note-input').value='';
+  save(); renderBucket(); toast('Added to bucket list! '+BUCKET_CAT_INFO[cat].icon);
+}
+
+function setBucketTab(tab,btn){
+  currentBucketTab=tab;
+  document.querySelectorAll('.btab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderBucket();
+}
+
+function renderBucket(){
+  const list=document.getElementById('bucket-list'); if(!list) return;
+  list.innerHTML='';
+  let items=(state.bucket||[]);
+  if(currentBucketTab!=='all') items=items.filter(i=>i.cat===currentBucketTab);
+  // Sort: undone first, then done
+  items=[...items.filter(i=>!i.done),...items.filter(i=>i.done)];
+  if(!items.length){
+    list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:.85rem">Nothing here yet! Add your dreams ✨</div>`;
+    twparse(list); return;
+  }
+  items.forEach(item=>{
+    const cat=BUCKET_CAT_INFO[item.cat]||{icon:'✨',color:'#ffb7c5'};
+    const div=document.createElement('div');
+    div.className='bucket-item'+(item.done?' done-bucket':'');
+    div.innerHTML=`
+      <input type="checkbox" ${item.done?'checked':''} onchange="toggleBucket('${item.id}')">
+      <div class="bucket-content">
+        <div class="bucket-name${item.done?' crossed':''}">${item.name}</div>
+        ${item.note?`<div class="bucket-meta">${item.note}</div>`:''}
+      </div>
+      <span class="bucket-emoji">${cat.icon}</span>
+      <button class="bucket-del" onclick="deleteBucket('${item.id}')">🗑</button>`;
+    list.appendChild(div);
+  });
+  twparse(list);
+}
+function toggleBucket(id){
+  const item=(state.bucket||[]).find(i=>i.id===id); if(!item) return;
+  item.done=!item.done; save(); renderBucket();
+  if(item.done) toast('Checked off! 🎉 '+item.name);
+}
+function deleteBucket(id){
+  state.bucket=(state.bucket||[]).filter(i=>i.id!==id); save(); renderBucket();
+}
+
+// ══════════════════════════════════════
+// REMINDERS
+// ══════════════════════════════════════
+function requestNotificationPermission(){if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();}
+function scheduleReminders(){
+  (state.reminders||[]).forEach(r=>{
+    if(!r.date)return;
+    const [y,mo,d]=r.date.split('-').map(Number),[h,m]=(r.time||'09:00').split(':').map(Number);
+    const diff=new Date(y,mo-1,d,h,m).getTime()-r.minsBefore*60000-Date.now();
+    if(diff>0&&diff<604800000)setTimeout(()=>{if(Notification.permission==='granted')new Notification('🐰 BunnyCal!',{body:r.stamp+' '+r.name});else toast('⏰ '+r.name);},diff);
+  });
+}
+function renderReminders(){
+  const list=document.getElementById('reminder-list');list.innerHTML='';
+  if(!(state.reminders||[]).length){list.innerHTML='<div style="font-size:.78rem;opacity:.5;text-align:center;padding:11px">No reminders 🐰</div>';return;}
+  state.reminders.forEach(r=>{const item=document.createElement('div');item.className='reminder-item';item.innerHTML=`<span>${r.stamp||'⏰'}</span><span><strong>${r.name}</strong> — ${formatDate(r.date)}</span><button class="r-del" onclick="deleteReminder('${r.id}')">🗑</button>`;list.appendChild(item);});
+}
+function deleteReminder(id){state.reminders=state.reminders.filter(r=>r.id!=id);save();renderReminders();}
+
+// ══════════════════════════════════════
+// GALLERY
+// ══════════════════════════════════════
+function addToGallery(ev){const file=ev.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=e=>{state.gallery.push(e.target.result);save();renderGallery();toast('Photo added 📷');};fr.readAsDataURL(file);}
+function renderGallery(){const g=document.getElementById('gallery-grid');if(!g)return;g.innerHTML='';(state.gallery||[]).forEach(src=>{const img=document.createElement('img');img.className='gallery-pic';img.src=src;img.onclick=()=>{document.getElementById('lightbox-img').src=src;openModal('lightbox');};g.appendChild(img);});}
+
+// ══════════════════════════════════════
+// SHOPPING LIST
+// ══════════════════════════════════════
+const SHOP_CAT_INFO={
+  grocery:  {icon:'🥦', label:'Grocery',  color:'#a8dcc5'},
+  health:   {icon:'💊', label:'Health',   color:'#ff9a9e'},
+  home:     {icon:'🏠', label:'Home',     color:'#ffe49a'},
+  beauty:   {icon:'💄', label:'Beauty',   color:'#ffb7c5'},
+  clothes:  {icon:'👗', label:'Clothes',  color:'#c9b8e8'},
+  other:    {icon:'📦', label:'Other',    color:'#d5c5b0'},
+};
+let currentShopCat='all';
+
+function addShopItem(){
+  const name=document.getElementById('shop-name-input').value.trim(); if(!name) return;
+  const qty=parseInt(document.getElementById('shop-qty-input').value)||1;
+  const cat=document.getElementById('shop-cat-input').value;
+  const note=document.getElementById('shop-note-input').value.trim();
+  const item={id:Date.now().toString(),name,qty,cat,note,got:false,createdAt:Date.now()};
+  if(!state.shopping) state.shopping=[];
+  state.shopping.push(item);
+  document.getElementById('shop-name-input').value='';
+  document.getElementById('shop-qty-input').value='1';
+  document.getElementById('shop-note-input').value='';
+  save(); renderShopping(); toast('Added to list! '+SHOP_CAT_INFO[cat].icon);
+}
+
+function setShopCat(cat,btn){
+  currentShopCat=cat;
+  document.querySelectorAll('.shop-cat-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderShopping();
+}
+
+function renderShopping(){
+  const list=document.getElementById('shop-list'); if(!list) return;
+  const statsEl=document.getElementById('shop-stats'); 
+  list.innerHTML='';
+  const all=state.shopping||[];
+  const total=all.length, got=all.filter(i=>i.got).length;
+  
+  // Stats
+  if(statsEl){
+    statsEl.innerHTML=`
+      <span class="shop-stat">🛒 ${total} items</span>
+      <span class="shop-stat">✅ ${got} got</span>
+      <span class="shop-stat">📋 ${total-got} left</span>
+      ${got>0?`<button class="shop-clear-got" onclick="clearGotItems()">Clear got ✕</button>`:''}
+    `;
+  }
+
+  // Filter
+  let items=currentShopCat==='all' ? [...all] : all.filter(i=>i.cat===currentShopCat);
+  if(!items.length){
+    list.innerHTML=`<div style="text-align:center;padding:28px;opacity:.5;font-size:.85rem">${currentShopCat==='all'?'Your list is empty! Add things to buy 🛒':'Nothing in this category yet ✨'}</div>`;
+    twparse(list); return;
+  }
+
+  // Group by category when showing all
+  if(currentShopCat==='all'){
+    const grouped={};
+    items.forEach(i=>{ if(!grouped[i.cat]) grouped[i.cat]=[]; grouped[i.cat].push(i); });
+    // Not-got first within each group
+    Object.entries(grouped).forEach(([cat,catItems])=>{
+      const info=SHOP_CAT_INFO[cat]||{icon:'📦',label:cat};
+      const title=document.createElement('div');
+      title.className='shop-group-title';
+      title.textContent=info.icon+' '+info.label;
+      list.appendChild(title);
+      const sorted=[...catItems.filter(i=>!i.got),...catItems.filter(i=>i.got)];
+      sorted.forEach(item=>list.appendChild(makeShopItem(item)));
+    });
+  } else {
+    const sorted=[...items.filter(i=>!i.got),...items.filter(i=>i.got)];
+    sorted.forEach(item=>list.appendChild(makeShopItem(item)));
+  }
+  twparse(list);
+  if(statsEl) twparse(statsEl);
+}
+
+function makeShopItem(item){
+  const info=SHOP_CAT_INFO[item.cat]||{icon:'📦',color:'#d5c5b0'};
+  const div=document.createElement('div');
+  div.className='shop-item'+(item.got?' got':'');
+  div.innerHTML=`
+    <input type="checkbox" ${item.got?'checked':''} onchange="toggleShopItem('${item.id}')">
+    <div class="shop-item-info">
+      <div class="shop-item-name${item.got?' crossed':''}">${item.name}</div>
+      ${item.note?`<div class="shop-item-meta">${item.note}</div>`:''}
+    </div>
+    <span class="shop-item-qty" style="background:${info.color}33;color:${darken(info.color)}">×${item.qty}</span>
+    <button class="shop-item-del" onclick="deleteShopItem('${item.id}')">🗑</button>`;
+  return div;
+}
+
+function toggleShopItem(id){
+  const item=(state.shopping||[]).find(i=>i.id===id); if(!item) return;
+  item.got=!item.got; save(); renderShopping();
+  if(item.got) toast('Got it! ✅ '+item.name);
+}
+function deleteShopItem(id){
+  state.shopping=(state.shopping||[]).filter(i=>i.id!==id); save(); renderShopping();
+}
+function clearGotItems(){
+  state.shopping=(state.shopping||[]).filter(i=>!i.got); save(); renderShopping(); toast('Cleared got items 🧹');
+}
+
+// ══════════════════════════════════════
+// HOBBIES
+// ══════════════════════════════════════
+const HOBBIES=[{icon:'🎨',name:'Art'},{icon:'📚',name:'Reading'},{icon:'🌱',name:'Gardening'},{icon:'🎵',name:'Music'},{icon:'🏃',name:'Running'},{icon:'🧘',name:'Yoga'},{icon:'🍳',name:'Cooking'},{icon:'✏️',name:'Journaling'},{icon:'🎮',name:'Gaming'},{icon:'🧶',name:'Knitting'},{icon:'📸',name:'Photography'},{icon:'🌸',name:'Nature'}];
+function renderHobbies(){const grid=document.getElementById('hobby-grid');grid.innerHTML='';HOBBIES.forEach(h=>{const count=state.events.filter(e=>e.name.toLowerCase().includes(h.name.toLowerCase())).length;const card=document.createElement('div');card.className='hobby-card';card.innerHTML=`<div class="hobby-icon">${h.icon}</div><div class="hobby-name">${h.name}</div><div class="hobby-count">${count} event${count!==1?'s':''}</div>`;card.onclick=()=>{document.getElementById('ev-name').value=h.icon+' '+h.name+' ';document.getElementById('ev-date').value=fmt(new Date());resetAddForm();document.getElementById('ev-name').value=h.icon+' '+h.name+' ';openModal('add-event');};grid.appendChild(card);});}
+
+// ══════════════════════════════════════
+// MUSIC
+// ══════════════════════════════════════
+const TRACKS={cozy:{notes:[261,329,392,523],bpm:60},rain:{notes:[196,247,294,349],bpm:45},forest:{notes:[220,277,330,440],bpm:50},stars:{notes:[311,370,415,523],bpm:55}};
+function playTrack(name){
+  stopMusic();
+  document.querySelectorAll('.music-track').forEach(b=>b.classList.remove('playing'));
+  const btn=document.getElementById('track-'+name);if(btn)btn.classList.add('playing');
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const track=TRACKS[name];let step=0;
+  function playNote(){if(!audioCtx)return;const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=name==='stars'?'triangle':'sine';osc.frequency.setValueAtTime(track.notes[step%track.notes.length],audioCtx.currentTime);gain.gain.setValueAtTime(0,audioCtx.currentTime);gain.gain.linearRampToValueAtTime(musicVol*.15,audioCtx.currentTime+.1);gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+.7);osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+.8);step++;}
+  playNote();musicInterval=setInterval(playNote,60000/track.bpm);
+  document.getElementById('music-status').textContent='♪ playing';
+}
+function stopMusic(){if(musicInterval){clearInterval(musicInterval);musicInterval=null;}if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}document.querySelectorAll('.music-track').forEach(b=>b.classList.remove('playing'));document.getElementById('music-status').textContent='';}
+function setVol(v){musicVol=parseFloat(v);}
+
+// ══════════════════════════════════════
+// BACKGROUND & PARTICLES
+// ══════════════════════════════════════
+function setBg(name,silent){state.bg=name;document.getElementById('bgLayer').className='bg-layer bg-'+name;if(!silent){save();toast('Theme changed 🌸');}}
+const PSETS={sakura:['🌸','🌺','🌷','🌼'],stars:['⭐','✨','💫','🌟'],leaves:['🍃','🍂','🍀','🌿'],snow:['❄️','⛄','✨'],hearts:['💕','💖','💗','💓']};
+let ptimer=null;
+function setParticles(name,silent){
+  state.particles=name;if(ptimer){clearInterval(ptimer);ptimer=null;}
+  const c=document.getElementById('particles');c.innerHTML='';const emojis=PSETS[name];
+  function spawn(){if(c.children.length>18)return;const p=document.createElement('div');p.className='particle';p.textContent=emojis[Math.floor(Math.random()*emojis.length)];p.style.left=Math.random()*100+'vw';p.style.fontSize=(.8+Math.random()*.8)+'rem';p.style.animationDuration=(8+Math.random()*10)+'s';p.style.animationDelay=(-Math.random()*8)+'s';c.appendChild(p);setTimeout(()=>p.remove(),20000);}
+  for(let i=0;i<12;i++)spawn();ptimer=setInterval(spawn,1200);
+  if(!silent){save();toast('Particles updated ✨');}
+}
+
+// ══════════════════════════════════════
+// VIEW SWITCHING
+// ══════════════════════════════════════
+function setView(v,btn){
+  currentView=v;
+  document.querySelectorAll('.hbtn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  ['view-month','view-todo','view-routine','view-bucket','view-shopping','view-events-full','view-hobbies-full'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('viewTabs').style.display=v==='calendar'?'flex':'none';
+  if(v==='calendar') setMainTab(currentMainTab);
+  else if(v==='routine'){document.getElementById('view-routine').style.display='block';renderRoutine();}
+  else if(v==='bucket'){document.getElementById('view-bucket').style.display='block';renderBucket();}
+  else if(v==='shopping'){document.getElementById('view-shopping').style.display='block';renderShopping();}
+  else if(v==='events'){document.getElementById('view-events-full').style.display='block';renderEventsFull();}
+  else if(v==='hobbies'){document.getElementById('view-hobbies-full').style.display='block';renderHobbies();}
+}
+function setMainTab(tab,btn){
+  currentMainTab=tab;
+  document.querySelectorAll('.vtab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  else{const tabs=document.querySelectorAll('.vtab');['month','todo'].forEach((t,i)=>{if(t===tab)tabs[i]?.classList.add('active');});}
+  document.getElementById('view-month').style.display=tab==='month'?'block':'none';
+  document.getElementById('view-todo').style.display=tab==='todo'?'block':'none';
+}
+
+// ══════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════
+function openModal(name){
+  document.getElementById('modal-'+name).style.display='flex';
+  if(name==='reminders') renderReminders();
+  if(name==='gallery-modal') renderGallery();
+  setTimeout(()=>twparse(document.getElementById('modal-'+name)),50);
+}
+function closeModal(name){document.getElementById('modal-'+name).style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay').forEach(m=>m.style.display='none');});
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function formatDate(ds){if(!ds)return '';const[y,m,d]=ds.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(d)+', '+y;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+</script>
+</body>
+</html>
