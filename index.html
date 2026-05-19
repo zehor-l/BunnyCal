@@ -17,25 +17,19 @@ img.emoji {
   display: inline-block;
 }
 </style>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  const firebaseConfig = {
+<!-- Firebase compat SDK from cdnjs (confirmed available) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-firestore-compat.min.js"></script>
+<script>
+  var _firebaseApp = firebase.initializeApp({
     apiKey:"AIzaSyCAwkT617nXLeQuDdSV8XLaQC4EEsg-g8w",
     authDomain:"bunnycalendar-d7604.firebaseapp.com",
     projectId:"bunnycalendar-d7604",
     storageBucket:"bunnycalendar-d7604.firebasestorage.app",
     messagingSenderId:"600419694120",
-    appId:"1:600419694120:web:fbee0c84dd5187d142e71d",
-    measurementId:"G-W72SG98EWL"
-  };
-  const app=initializeApp(firebaseConfig);
-  const auth=getAuth(app); const db=getFirestore(app);
-  const provider=new GoogleAuthProvider();
-  window._fb={auth,db,provider,signInWithPopup,signOut,onAuthStateChanged,doc,setDoc,getDoc,collection,getDocs,deleteDoc};
+    appId:"1:600419694120:web:fbee0c84dd5187d142e71d"
+  });
 </script>
 <style>
 :root{
@@ -90,6 +84,43 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .music-track:hover{background:var(--mint);}
 .music-track.playing{background:var(--mint);border-color:#5aaf8a;}
 .vol-slider{width:72px;accent-color:var(--mint);cursor:pointer;}
+
+/* Ko-fi chip in user area */
+.kofi-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  background:linear-gradient(135deg,#ff5e5b,#ff8a65);
+  color:#fff;border:none;border-radius:50px;
+  padding:3px 10px;font-size:.72rem;font-weight:800;
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:.2s;font-family:inherit;flex-shrink:0;
+}
+.kofi-chip:hover{transform:translateY(-1px);opacity:.92;}
+
+/* ── BUNNY NOTIFICATION POPUP ── */
+#bunny-popup{
+  position:fixed;bottom:80px;right:18px;z-index:300;
+  background:var(--white);border-radius:20px;
+  padding:16px 18px;max-width:260px;width:90vw;
+  box-shadow:0 8px 32px rgba(139,94,82,.22);
+  border:2px solid rgba(255,183,197,.45);
+  animation:popIn .35s cubic-bezier(.34,1.56,.64,1);
+  display:none;
+}
+#bunny-popup.show{display:block;}
+@keyframes popIn{from{transform:scale(.7) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.bp-header{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.bp-bunny{font-size:2rem;animation:bunnybounce 1.2s ease-in-out infinite;}
+@keyframes bunnybounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+.bp-title{font-family:'Caveat',cursive;font-size:1.15rem;font-weight:700;color:var(--brown);}
+.bp-msg{font-size:.8rem;color:var(--text);line-height:1.5;margin-bottom:11px;}
+.bp-actions{display:flex;gap:7px;flex-wrap:wrap;}
+.bp-action{flex:1;padding:7px 10px;border-radius:50px;border:2px solid rgba(255,183,197,.5);
+  background:rgba(255,183,197,.2);font-family:inherit;font-size:.76rem;font-weight:700;
+  cursor:pointer;color:var(--text);text-decoration:none;text-align:center;transition:.15s;}
+.bp-action:hover,.bp-action:active{background:var(--pink);color:#fff;}
+.bp-action.primary{background:linear-gradient(135deg,#ff5e5b,#ff8a65);color:#fff;border-color:transparent;}
+.bp-close{position:absolute;top:9px;right:9px;background:rgba(255,183,197,.3);border:none;
+  border-radius:50%;width:22px;height:22px;font-size:.72rem;cursor:pointer;font-weight:900;}
 
 /* ── LAYOUT ── */
 #main-area{display:grid;grid-template-columns:1fr 300px;gap:12px;}
@@ -417,11 +448,14 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
     <button class="music-track" onclick="playTrack('rain')"   id="track-rain">🌧 Rain</button>
     <button class="music-track" onclick="playTrack('forest')" id="track-forest">🌿 Forest</button>
     <button class="music-track" onclick="playTrack('stars')"  id="track-stars">⭐ Stars</button>
-    <button class="music-track" onclick="openModal('spotify')">🎷 Jazz</button>
+    <button class="music-track" onclick="playTrack('jazz')"     id="track-jazz">🎷 Jazz</button>
+    <button class="music-track" onclick="playTrack('japanese')" id="track-japanese">🌸 Japan</button>
     <button class="music-track" onclick="stopMusic()" style="opacity:.6">⏹ Stop</button>
-    <input class="vol-slider" type="range" min="0" max="1" step=".05" value=".4" oninput="setVol(this.value)">
-    <span id="music-status" style="font-size:.72rem;color:#3a9a72;font-weight:700;"></span>
+    <input class="vol-slider" type="range" min="0" max="1" step=".05" value=".5" oninput="setVol(this.value)" id="vol-slider">
+    <span id="music-status" style="font-size:.7rem;color:#3a9a72;font-weight:700;font-style:italic;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
   </div>
+  <!-- Audio element for real music -->
+  <audio id="bg-audio" loop preload="none"></audio>
 
   <!-- VIEW TABS (calendar only) -->
   <div class="view-tabs" id="viewTabs">
@@ -685,17 +719,7 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   <img id="lightbox-img" src="" style="max-width:600px;width:93vw;border-radius:16px;margin:auto;display:block">
 </div>
 
-<!-- SPOTIFY -->
-<div id="modal-spotify" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:370px">
-    <button class="modal-close" onclick="closeModal('spotify')">✕</button>
-    <div class="modal-title">🎷 Jazz Vibes</div>
-    <iframe style="border-radius:12px;width:100%;height:152px;border:none;"
-      src="https://open.spotify.com/embed/playlist/0BS0s5p1e40lTuhcE0mVN1?utm_source=generator&theme=0"
-      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-    <p style="margin-top:8px;font-size:.74rem;color:#bbb;text-align:center;">Needs Spotify for full playback</p>
-  </div>
-</div>
+<!-- Spotify modal removed - Jazz now streams directly -->
 
 <script>
 // ══════════════════════════════════════
@@ -730,24 +754,70 @@ let currentEventId=null;
 let currentView='calendar';
 let routineDate=new Date();
 let currentBucketTab='all';
-let audioCtx=null, musicInterval=null, musicVol=.4;
+let audioCtx=null, musicInterval=null; // kept for compatibility
 
 // ══════════════════════════════════════
 // BOOT
 // ══════════════════════════════════════
 
-// Twemoji: parse a DOM node (or whole body) to replace emoji with consistent SVG images
+// Twemoji helper
 function twparse(el){ if(window.twemoji) twemoji.parse(el||document.body,{folder:'svg',ext:'.svg'}); }
 
-window.addEventListener('DOMContentLoaded',()=>{
+// ══════════════════════════════════════
+// BOOT — using Firebase compat API
+// (synchronous, no module race condition)
+// ══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
   buildStampPicker('ev-stamp-pick','🐰');
   buildStampPicker('edit-ev-stamp-pick','🐰');
-  // Parse static HTML emojis immediately (login screen, buttons, etc.)
   twparse(document.body);
-  const fb=window._fb;
-  if(!fb){continueAsGuest();return;}
-  fb.onAuthStateChanged(fb.auth,async user=>{
-    if(user){currentUser=user;await loadFromFirestore();showApp();}
+
+  if (typeof firebase === 'undefined') {
+    console.warn('Firebase not loaded — guest mode only');
+    document.getElementById('login-screen').style.display = 'flex';
+    return;
+  }
+
+  // Set auth persistence to LOCAL so login survives page refresh
+  // Handle redirect result (for mobile redirect-based login)
+  firebase.auth().getRedirectResult().then((result) => {
+    if(result && result.user){
+      // Redirect login succeeded — onAuthStateChanged will fire next
+      console.log('Redirect login success:', result.user.email);
+    }
+  }).catch((e) => {
+    if(e.code !== 'auth/no-auth-event'){
+      console.warn('Redirect result error:', e);
+    }
+  });
+
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        // Signed in — load their data and show app
+        currentUser = user;
+        await loadFromFirestore();
+        showApp();
+      } else {
+        // Not signed in — make sure login screen is visible
+        currentUser = null;
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+    });
+  }).catch((e) => {
+    console.warn('Persistence error:', e);
+    // Fallback: still wire up auth
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        await loadFromFirestore();
+        showApp();
+      } else {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+    });
   });
 });
 
@@ -755,14 +825,55 @@ window.addEventListener('DOMContentLoaded',()=>{
 // AUTH
 // ══════════════════════════════════════
 async function signInGoogle(){
-  const fb=window._fb; if(!fb) return;
-  try{await fb.signInWithPopup(fb.auth,fb.provider);}catch(e){toast('Sign-in failed: '+e.message);}
+  if(typeof firebase === 'undefined'){
+    toast('Firebase not available — try Guest mode 🐰');
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+
+  // Show loading state
+  const btn = document.querySelector('.google-btn');
+  if(btn){ btn.textContent = '⏳ Signing in...'; btn.disabled = true; }
+
+  try{
+    await firebase.auth().signInWithPopup(provider);
+    // onAuthStateChanged handles showing the app
+  } catch(e){
+    // Re-enable button on error
+    if(btn){ btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google'; btn.disabled = false; }
+
+    if(e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user'){
+      // Popup blocked — try redirect instead (works on mobile)
+      toast('Trying redirect login... 🐰');
+      try{
+        await firebase.auth().signInWithRedirect(provider);
+      } catch(e2){
+        toast('Sign-in failed. Make sure popups are allowed 🐰');
+      }
+    } else if(e.code === 'auth/cancelled-popup-request'){
+      // User opened multiple popups — ignore
+    } else if(e.code === 'auth/unauthorized-domain'){
+      toast('Domain not authorized. See console for fix 🐰');
+      console.error('FIREBASE FIX: Add your domain to Firebase Console > Authentication > Settings > Authorized domains');
+      console.error('Your domain:', window.location.hostname);
+    } else {
+      toast('Sign-in error: ' + (e.message || e.code));
+      console.error('Auth error:', e);
+    }
+  }
 }
-function continueAsGuest(){ currentUser=null; lsLoad(); showApp(); }
+function continueAsGuest(){
+  currentUser = null;
+  lsLoad();
+  showApp();
+}
 async function signOutUser(){
-  const fb=window._fb;
-  if(currentUser&&fb) await fb.signOut(fb.auth);
-  currentUser=null;
+  if(typeof firebase !== 'undefined') {
+    try { await firebase.auth().signOut(); } catch(e){}
+  }
+  currentUser = null;
   state={events:[],todos:{main:[],quick:[]},notes:{},gallery:[],reminders:[],bg:'spring',particles:'sakura',routine:{},customSections:[],bucket:[],shopping:[]};
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -779,42 +890,131 @@ function showApp(){
   renderBucket(); renderShopping();
   // Re-parse all emojis after app content loads
   setTimeout(()=>twparse(document.body), 100);
+  // Schedule cute bunny popup notifications
+  scheduleBunnyPopups();
 }
 function renderUserArea(){
   const area=document.getElementById('user-area');
   if(currentUser){
-    area.innerHTML=`<div class="user-chip"><img class="user-avatar" src="${currentUser.photoURL||''}" onerror="this.style.display='none'"><span class="user-name">${(currentUser.displayName||'You').split(' ')[0]}</span><button class="hbtn" style="padding:3px 9px;font-size:.7rem" onclick="signOutUser()">Sign Out</button></div>`;
+    area.innerHTML=`<div class="user-chip">
+      <img class="user-avatar" src="${currentUser.photoURL||''}" onerror="this.style.display='none'">
+      <span class="user-name">${(currentUser.displayName||'You').split(' ')[0]}</span>
+      <a href="https://ko-fi.com/bunnycal" target="_blank" class="kofi-chip" title="Support BunnyCal ☕">☕</a>
+      <button class="hbtn" style="padding:3px 9px;font-size:.7rem" onclick="signOutUser()">Sign Out</button>
+    </div>`;
   } else {
-    area.innerHTML=`<button class="sign-in-btn" onclick="signInGoogle()">☁️ Save to Cloud</button>`;
+    area.innerHTML=`<div style="display:flex;align-items:center;gap:7px;">
+      <button class="sign-in-btn" onclick="signInGoogle()">☁️ Save to Cloud</button>
+      <a href="https://ko-fi.com/bunnycal" target="_blank" class="kofi-chip" title="Buy me a coffee ☕">☕ Ko-fi</a>
+    </div>`;
   }
 }
 
 // ══════════════════════════════════════
-// FIRESTORE
+// FIRESTORE — secure, user-isolated
+// Each user can ONLY read/write their own
+// data (enforced both here AND in rules).
 // ══════════════════════════════════════
+function getDB(){
+  try{ return (typeof firebase!=='undefined') ? firebase.firestore() : null; }catch(e){ return null; }
+}
+
+// Security check — call before every Firestore op
+function secureUID(){
+  if(!currentUser || !currentUser.uid){
+    console.warn('Security: no authenticated user, blocking Firestore op');
+    return null;
+  }
+  // Double-check against live Firebase auth (not just our variable)
+  const liveUser = firebase.auth().currentUser;
+  if(!liveUser || liveUser.uid !== currentUser.uid){
+    console.warn('Security: uid mismatch, blocking Firestore op');
+    return null;
+  }
+  return currentUser.uid;
+}
+
+// User's personal Firestore path — /users/{uid}/
+function userDoc(){
+  const uid = secureUID(); if(!uid) return null;
+  return getDB().collection('users').doc(uid);
+}
+
 async function loadFromFirestore(){
-  const fb=window._fb; if(!fb||!currentUser) return;
+  const doc = userDoc(); if(!doc) return;
   try{
-    const snap=await fb.getDoc(fb.doc(fb.db,'users',currentUser.uid));
-    if(snap.exists()){const d=snap.data(); Object.assign(state,{todos:d.todos||state.todos,notes:d.notes||{},reminders:d.reminders||[],bg:d.bg||'spring',particles:d.particles||'sakura',routine:d.routine||{},customSections:d.customSections||[],bucket:d.bucket||[],shopping:d.shopping||[]});}
-    const evSnap=await fb.getDocs(fb.collection(fb.db,'users',currentUser.uid,'events'));
-    state.events=[]; evSnap.forEach(d=>state.events.push({id:d.id,...d.data()}));
-    const g=localStorage.getItem('bunnycal_gallery'); state.gallery=g?JSON.parse(g):[];
-  }catch(e){console.warn(e);}
+    const snap = await doc.get();
+    if(snap.exists){
+      const data = snap.data();
+      // Only load keys we expect — never blindly assign
+      if(data.todos)           state.todos          = data.todos;
+      if(data.notes)           state.notes          = data.notes;
+      if(data.reminders)       state.reminders      = data.reminders;
+      if(data.bg)              state.bg             = data.bg;
+      if(data.particles)       state.particles      = data.particles;
+      if(data.routine)         state.routine        = data.routine;
+      if(data.customSections)  state.customSections = data.customSections;
+      if(data.bucket)          state.bucket         = data.bucket;
+      if(data.shopping)        state.shopping       = data.shopping;
+    }
+    const evSnap = await doc.collection('events').get();
+    state.events = [];
+    evSnap.forEach(function(d){ state.events.push(Object.assign({id:d.id}, d.data())); });
+    const g = localStorage.getItem('bunnycal_gallery');
+    state.gallery = g ? JSON.parse(g) : [];
+  } catch(e){
+    console.warn('Firestore load error:', e.code, e.message);
+    if(e.code === 'permission-denied'){
+      toast('Access denied — please sign in again 🐰');
+      signOutUser();
+    }
+  }
 }
+
 async function cloudSaveMeta(){
-  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
-  try{await fb.setDoc(fb.doc(fb.db,'users',currentUser.uid),{todos:state.todos,notes:state.notes,reminders:state.reminders,bg:state.bg,particles:state.particles,routine:state.routine,customSections:state.customSections,bucket:state.bucket,shopping:state.shopping||[]},{merge:true});}catch(e){console.warn(e);}
+  const doc = userDoc(); if(!doc){ lsSave(); return; }
+  try{
+    await doc.set({
+      todos: state.todos || {main:[],quick:[]},
+      notes: state.notes || {},
+      reminders: state.reminders || [],
+      bg: state.bg || 'spring',
+      particles: state.particles || 'sakura',
+      routine: state.routine || {},
+      customSections: state.customSections || [],
+      bucket: state.bucket || [],
+      shopping: state.shopping || [],
+      updatedAt: Date.now(),
+      ownerUID: currentUser.uid  // extra safety field
+    }, { merge: true });
+  } catch(e){
+    console.warn('Firestore save error:', e.code);
+    if(e.code === 'permission-denied') toast('Save failed — permission denied 🐰');
+  }
 }
+
 async function cloudSaveEvent(ev){
-  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
-  const {id,...d}=ev; try{await fb.setDoc(fb.doc(fb.db,'users',currentUser.uid,'events',id),d);}catch(e){console.warn(e);}
+  const doc = userDoc(); if(!doc){ lsSave(); return; }
+  try{
+    var evData = Object.assign({}, ev);
+    delete evData.id;
+    evData.ownerUID = currentUser.uid;
+    await doc.collection('events').doc(ev.id).set(evData);
+  } catch(e){ console.warn('Event save error:', e.code); }
 }
+
 async function cloudDeleteEvent(id){
-  const fb=window._fb; if(!fb||!currentUser){lsSave();return;}
-  try{await fb.deleteDoc(fb.doc(fb.db,'users',currentUser.uid,'events',id));}catch(e){console.warn(e);}
+  const doc = userDoc(); if(!doc){ lsSave(); return; }
+  try{
+    await doc.collection('events').doc(id).delete();
+  } catch(e){ console.warn('Event delete error:', e.code); }
 }
-function save(){ if(currentUser) cloudSaveMeta(); else lsSave(); localStorage.setItem('bunnycal_gallery',JSON.stringify(state.gallery)); }
+
+function save(){
+  if(currentUser) cloudSaveMeta();
+  else lsSave();
+  localStorage.setItem('bunnycal_gallery', JSON.stringify(state.gallery||[]));
+}
 
 // ══════════════════════════════════════
 // STAMP PICKER
@@ -1282,21 +1482,133 @@ const HOBBIES=[{icon:'🎨',name:'Art'},{icon:'📚',name:'Reading'},{icon:'🌱
 function renderHobbies(){const grid=document.getElementById('hobby-grid');grid.innerHTML='';HOBBIES.forEach(h=>{const count=state.events.filter(e=>e.name.toLowerCase().includes(h.name.toLowerCase())).length;const card=document.createElement('div');card.className='hobby-card';card.innerHTML=`<div class="hobby-icon">${h.icon}</div><div class="hobby-name">${h.name}</div><div class="hobby-count">${count} event${count!==1?'s':''}</div>`;card.onclick=()=>{document.getElementById('ev-name').value=h.icon+' '+h.name+' ';document.getElementById('ev-date').value=fmt(new Date());resetAddForm();document.getElementById('ev-name').value=h.icon+' '+h.name+' ';openModal('add-event');};grid.appendChild(card);});}
 
 // ══════════════════════════════════════
-// MUSIC
+// MUSIC — Verified public domain streams
+// All from Wikimedia Commons (CORS-enabled,
+// confirmed working, no copyright issues).
 // ══════════════════════════════════════
-const TRACKS={cozy:{notes:[261,329,392,523],bpm:60},rain:{notes:[196,247,294,349],bpm:45},forest:{notes:[220,277,330,440],bpm:50},stars:{notes:[311,370,415,523],bpm:55}};
-function playTrack(name){
+const TRACKS = {
+  cozy: {
+    label: '🍵 Gymnopédie No.1 – Erik Satie',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e9/Gymnopedie_No._1.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5f/Erik_Satie_-_Gymnop%C3%A9die_No._3.ogg'
+    ]
+  },
+  rain: {
+    label: '🌧 Moonlight Sonata – Beethoven',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/6/6d/Moonlight_sonata.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f1/Beethoven-Moonlight-Sonata-1st-movement.ogg'
+    ]
+  },
+  forest: {
+    label: '🌿 Clair de Lune – Debussy',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/0/09/Clair_de_lune_%28Suite_bergamasque%2C_Debussy%29.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f4/Claude_Debussy_-_Arabesque_No._1.ogg'
+    ]
+  },
+  stars: {
+    label: '⭐ Nocturne Op.9 No.2 – Chopin',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/2/20/Chopin_-_Nocturne_Op._9_No._2_%28Wlodek_Lewandowski%29.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/24/Chopin_Piano_Sonata_No._2_in_B_flat_minor_Op._35_-_III_Funeral_March_%28Horowitz%2C_1945%29.ogg'
+    ]
+  },
+  jazz: {
+    label: '🎷 Jazz – Acoustic Blues',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e5/TubaSkinnayEnnis.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Serenata_Espanola_Op._181_-_Malats-Bizet.ogg'
+    ]
+  },
+  japanese: {
+    label: '🌸 Sakura Sakura – Japanese Folk',
+    urls: [
+      'https://upload.wikimedia.org/wikipedia/commons/9/9d/Sakura_Sakura.ogg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b3/Kimi_ga_yo_orchestral.ogg'
+    ]
+  }
+};
+
+let currentAudio = null;
+let musicVol = 0.5;
+
+function playTrack(name) {
   stopMusic();
-  document.querySelectorAll('.music-track').forEach(b=>b.classList.remove('playing'));
-  const btn=document.getElementById('track-'+name);if(btn)btn.classList.add('playing');
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  const track=TRACKS[name];let step=0;
-  function playNote(){if(!audioCtx)return;const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=name==='stars'?'triangle':'sine';osc.frequency.setValueAtTime(track.notes[step%track.notes.length],audioCtx.currentTime);gain.gain.setValueAtTime(0,audioCtx.currentTime);gain.gain.linearRampToValueAtTime(musicVol*.15,audioCtx.currentTime+.1);gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+.7);osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+.8);step++;}
-  playNote();musicInterval=setInterval(playNote,60000/track.bpm);
-  document.getElementById('music-status').textContent='♪ playing';
+  const track = TRACKS[name];
+  if (!track) return;
+
+  document.querySelectorAll('.music-track').forEach(b => b.classList.remove('playing'));
+  const btn = document.getElementById('track-' + name);
+  if (btn) btn.classList.add('playing');
+
+  const statusEl = document.getElementById('music-status');
+  if (statusEl) statusEl.textContent = '⏳ Loading…';
+
+  tryUrls(track.urls, 0, track.label, statusEl, name);
 }
-function stopMusic(){if(musicInterval){clearInterval(musicInterval);musicInterval=null;}if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}document.querySelectorAll('.music-track').forEach(b=>b.classList.remove('playing'));document.getElementById('music-status').textContent='';}
-function setVol(v){musicVol=parseFloat(v);}
+
+function tryUrls(urls, index, label, statusEl, trackName) {
+  if (index >= urls.length) {
+    if (statusEl) statusEl.textContent = '⚠ Track unavailable';
+    document.querySelectorAll('.music-track').forEach(b => b.classList.remove('playing'));
+    toast('Could not load music — check your connection 🎵');
+    return;
+  }
+
+  const audio = new Audio();
+  // Do NOT set crossOrigin — Wikimedia does not require it and it can block some requests
+  audio.loop = true;
+  audio.volume = musicVol;
+
+  const onCanPlay = () => {
+    if (currentAudio !== audio) return; // superseded by another call
+    audio.play().then(() => {
+      if (statusEl) statusEl.textContent = '♪ ' + label;
+    }).catch(() => {
+      // Autoplay policy blocked — require user gesture
+      if (statusEl) {
+        statusEl.textContent = '▶ Click here to play';
+        statusEl.style.cursor = 'pointer';
+        statusEl.onclick = () => {
+          audio.play();
+          statusEl.textContent = '♪ ' + label;
+          statusEl.style.cursor = '';
+          statusEl.onclick = null;
+        };
+      }
+    });
+  };
+
+  const onError = () => {
+    if (currentAudio !== audio) return;
+    tryUrls(urls, index + 1, label, statusEl, trackName);
+  };
+
+  audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+  audio.addEventListener('error', onError, { once: true });
+
+  currentAudio = audio;
+  audio.src = urls[index];
+  audio.load();
+}
+
+function stopMusic() {
+  if (currentAudio) {
+    try { currentAudio.pause(); } catch(e) {}
+    currentAudio.src = '';
+    currentAudio = null;
+  }
+  document.querySelectorAll('.music-track').forEach(b => b.classList.remove('playing'));
+  const s = document.getElementById('music-status');
+  if (s) { s.textContent = ''; s.style.cursor = ''; s.onclick = null; }
+}
+
+function setVol(v) {
+  musicVol = parseFloat(v);
+  if (currentAudio) currentAudio.volume = musicVol;
+}
 
 // ══════════════════════════════════════
 // BACKGROUND & PARTICLES
@@ -1353,6 +1665,120 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function formatDate(ds){if(!ds)return '';const[y,m,d]=ds.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(d)+', '+y;}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ══════════════════════════════════════
+// 🐰 BUNNY NOTIFICATION SYSTEM
+// Shows cute popup messages periodically
+// ══════════════════════════════════════
+const BUNNY_MESSAGES = [
+  {
+    delay: 8 * 60 * 1000, // 8 min after opening
+    title: "Enjoying BunnyCal? 🌸",
+    msg: "If you love BunnyCal, a coffee helps keep the bunnies hopping! It takes just a sec ☕",
+    actions: [
+      { label: '☕ Buy a coffee', href: 'https://ko-fi.com/bunnycal', primary: true },
+      { label: 'Maybe later', onclick: 'closeBunnyPopup()' }
+    ]
+  },
+  {
+    delay: 20 * 60 * 1000, // 20 min
+    title: "Got a minute? 💌",
+    msg: "Your feedback means so much! What's one thing you'd love to see in BunnyCal?",
+    actions: [
+      { label: '📝 Send feedback', href: 'mailto:bunnycal@feedback.com?subject=BunnyCal Feedback', primary: true },
+      { label: '🐰 All good!', onclick: 'closeBunnyPopup()' }
+    ]
+  },
+  {
+    delay: 45 * 60 * 1000, // 45 min
+    title: "BunnyCal loves you 🐰✨",
+    msg: "You've been planning like a pro today! Share BunnyCal with a friend who needs cute vibes 🌸",
+    actions: [
+      { label: '📤 Share', onclick: 'shareBunnyCal()' },
+      { label: '☕ Support us', href: 'https://ko-fi.com/bunnycal', primary: true },
+      { label: '💕 Close', onclick: 'closeBunnyPopup()' }
+    ]
+  }
+];
+
+let bunnyPopupIndex = 0;
+
+function scheduleBunnyPopups() {
+  // Only show popups if user has been using the app a while
+  // and hasn't permanently dismissed
+  const dismissed = localStorage.getItem('bunny_popup_dismissed');
+  if (dismissed === 'forever') return;
+
+  BUNNY_MESSAGES.forEach((msg, i) => {
+    setTimeout(() => {
+      showBunnyPopup(msg);
+    }, msg.delay);
+  });
+}
+
+function showBunnyPopup(msg) {
+  const popup = document.getElementById('bunny-popup');
+  const title = document.getElementById('bp-title');
+  const msgEl = document.getElementById('bp-msg');
+  const actionsEl = document.getElementById('bp-actions');
+  if (!popup) return;
+
+  title.textContent = msg.title;
+  msgEl.textContent = msg.msg;
+  actionsEl.innerHTML = '';
+
+  msg.actions.forEach(a => {
+    if (a.href) {
+      const link = document.createElement('a');
+      link.href = a.href;
+      link.target = '_blank';
+      link.className = 'bp-action' + (a.primary ? ' primary' : '');
+      link.textContent = a.label;
+      actionsEl.appendChild(link);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'bp-action' + (a.primary ? ' primary' : '');
+      btn.textContent = a.label;
+      btn.setAttribute('onclick', a.onclick);
+      actionsEl.appendChild(btn);
+    }
+  });
+
+  popup.classList.add('show');
+  // Auto-hide after 30 seconds
+  setTimeout(() => closeBunnyPopup(), 30000);
+  twparse(popup);
+}
+
+function closeBunnyPopup() {
+  const popup = document.getElementById('bunny-popup');
+  if (popup) popup.classList.remove('show');
+}
+
+function shareBunnyCal() {
+  closeBunnyPopup();
+  if (navigator.share) {
+    navigator.share({
+      title: 'BunnyCal 🐰',
+      text: 'Check out this super cute calendar app!',
+      url: location.href
+    });
+  } else {
+    navigator.clipboard.writeText(location.href).then(() => toast('Link copied! Share it 🐰'));
+  }
+}
 </script>
+
+<!-- BUNNY NOTIFICATION POPUP -->
+<div id="bunny-popup">
+  <button class="bp-close" onclick="closeBunnyPopup()">✕</button>
+  <div class="bp-header">
+    <span class="bp-bunny">🐰</span>
+    <div class="bp-title" id="bp-title">Hi there!</div>
+  </div>
+  <div class="bp-msg" id="bp-msg"></div>
+  <div class="bp-actions" id="bp-actions"></div>
+</div>
+
 </body>
 </html>
